@@ -153,29 +153,28 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
       </div>
       
       {/* --- STRONA 3+ --- */}
-      <table style={{ pageBreakBefore: 'always', width: '100%', borderCollapse: 'collapse' }}>
+       <table style={{ pageBreakBefore: 'always', width: '100%', borderCollapse: 'collapse' }}>
         <thead style={{ display: 'table-header-group' }}>
           <tr><td style={{ padding: '20mm 20mm 0 20mm' }}><SubsequentPageHeader companyData={companyData} offerNumber={offerNumber} /></td></tr>
         </thead>
         <tbody>
           <tr>
             <td style={{ padding: '0 20mm 20mm 20mm', verticalAlign: 'top' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', borderBottom: '2px solid #2563eb', paddingBottom: '2mm', margin: '0 0 8mm 0' }}>SZCZEGÓŁOWE ZESTAWIENIE MATERIAŁÓW</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>SZCZEGÓŁOWE ZESTAWIENIE MATERIAŁÓW</h2>
               {(activeSections || []).map((section) => (
                   <div key={section.key} style={{ pageBreakInside: 'avoid', marginBottom: '6mm' }}>
-                      <div style={{ background: '#f1f5f9', padding: '3mm 6mm', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ background: '#f1f5f9', padding: '3mm 6mm', borderRadius: '4px' }}>
                           <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{section.name.toUpperCase()}</span>
-                          <span style={{ fontSize: '12px', color: '#475569' }}>{section.data.length} pozycji</span>
                       </div>
                       <div style={{ border: '1px solid #e2e8f0', borderTop: 'none', padding: '4mm' }}>
                           {section.key === 'szafki' 
-                            ? ( Object.entries(szafkiMaterialSummary || {}).map(([material, surface], idx) => (
+                            // ✅ ZMIANA: Mapujemy teraz po posortowanej tablicy, a nie po obiekcie
+                            ? (szafkiMaterialSummary || []).map(([material, surface], idx) => (
                                 <div key={idx} style={{ padding: '3mm 4mm', borderBottom: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                                     <span>{idx + 1}. {material}</span>
                                     <span style={{ fontWeight: 'bold' }}>{formatSurface(surface)}</span>
                                 </div>
                                 ))
-                            )
                             : (section.data || []).map((item, idx) => (
                                 <div key={idx} style={{ padding: '3mm 4mm', borderBottom: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                                     <span>{idx + 1}. {item.rodzaj}</span>

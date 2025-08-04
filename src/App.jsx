@@ -23,10 +23,10 @@ import SummaryDashboard from './components/sections/SummaryDashboard';
 import ProjectSetupForm from './components/sections/ProjectSetupForm';
 import CalculationSection from './components/sections/CalculationSection';
 import CompanySettings from './components/sections/CompanySettings';
+import ArchivePage from './components/sections/ArchivePage';
 
-// ✅ NOWOŚĆ: Komponent-wrapper dla całej aplikacji po zalogowaniu.
-// Zawiera całą Twoją oryginalną logikę z pliku App.jsx.
-const MainCalculatorApp = () => {
+// Komponent-wrapper dla całej aplikacji po zalogowaniu
+const MainApp = () => {
   const { projectData } = useProject();
 
   const sections = {
@@ -43,28 +43,26 @@ const MainCalculatorApp = () => {
     akcesoria: { title: '🛠️ Akcesoria', component: AkcesoriaTable },
     kalkulacja: { title: '💰 Pozostałe koszty', component: CalculationSection },
     podsumowanie: { title: '📊 Podsumowanie', component: SummaryDashboard },
+    archive: { title: '📦 Archiwum', component: ArchivePage },
   };
 
   return (
     <Layout>
       {({ activeTab, setActiveTab }) => {
-        // Inteligentne przekierowanie po zalogowaniu:
-        // Jeśli nie ma danych projektu (nowy użytkownik), wymuś start od `projectSetup`.
         const currentTab = projectData ? activeTab : 'projectSetup';
-        
         const activeSection = sections[currentTab] || sections.szafki;
         const ActiveComponent = activeSection.component;
 
         return (
           <>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              {/* Specjalna obsługa dla formularzy wymagających dodatkowych propsów */}
               {currentTab === 'projectSetup' ? (
                 <ProjectSetupForm 
-                  onComplete={() => {
-                    // Po uzupełnieniu danych, przejdź automatycznie do szafek
-                    setActiveTab('szafki'); 
-                  }}
+                  onComplete={() => setActiveTab('szafki')}
                 />
+              ) : currentTab === 'archive' ? (
+                <ArchivePage setActiveTab={setActiveTab} />
               ) : (
                 <ActiveComponent />
               )}
@@ -77,23 +75,20 @@ const MainCalculatorApp = () => {
   );
 };
 
-// Główny komponent App, który teraz zarządza tylko routingiem i providerami
+// Główny komponent App, który zarządza routingiem
 function App() {
   return (
     <Router>
       <AuthProvider>
         <ProjectProvider>
           <Routes>
-            {/* Ścieżki publiczne, dostępne dla każdego */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-
-            {/* Główna, chroniona ścieżka aplikacji */}
             <Route 
-              path="/*" // Używamy "/*", aby obsłużyć wszystkie ścieżki wewnątrz aplikacji (np. /szafki)
+              path="/*"
               element={
                 <ProtectedRoute>
-                  <MainCalculatorApp />
+                  <MainApp />
                 </ProtectedRoute>
               } 
             />
@@ -107,8 +102,6 @@ function App() {
 const ProjectStatusFooter = () => {
   const { projectData, totals } = useProject();
   const projectName = projectData?.projectName || 'Nowy Projekt';
-
-  // Upewniamy się, że totals nie jest null/undefined
   const grossTotal = totals?.grossTotal || 0;
 
   return (

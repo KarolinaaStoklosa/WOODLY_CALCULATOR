@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, Download, Save, TrendingUp, Package, DollarSign } from 'lucide-react';
+import { Download, Save, TrendingUp, Package, DollarSign, Calculator } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { getDropdownOptions } from '../../data/dropdowns';
 import OfferButtons from '../ui/OfferButtons';
@@ -8,27 +8,38 @@ const SummaryDashboard = () => {
   const { projectData, calculations, settings, totals, saveProjectToArchive, exportToJson } = useProject();
 
   const formatPrice = (price = 0) => `${price.toFixed(2).replace('.', ',')} zł`;
+  const formatSurface = (surface = 0) => `${surface.toFixed(2).replace('.', ',')} m²`;
   
   const getOfferData = () => {
     const szafki = calculations?.szafki || [];
     const blaty = calculations?.blaty || [];
     const blatyOptions = getDropdownOptions('blaty');
+    
+    // ✅ ZMIANA: Definiujemy stałą, niezmienną kolejność sekcji
+    const sectionOrder = [
+      'szafki', 'szuflady', 'widocznyBok', 'drzwiPrzesuwne', 
+      'uchwyty', 'zawiasy', 'podnosniki', 'blaty', 'akcesoria'
+    ];
 
-    const szafkiMaterialSummary = szafki.reduce((summary, szafka) => {
-        const korpusMaterial = szafka.plytyKorpus;
-        const korpusSurface = (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0);
-        if (korpusMaterial && korpusSurface > 0) {
-            summary[korpusMaterial] = (summary[korpusMaterial] || 0) + korpusSurface;
-        }
-        const frontMaterial = szafka.plytyFront;
-        const frontSurface = szafka.powierzchniaFront || 0;
-        if (frontMaterial && frontMaterial !== '-- BRAK FRONTU --' && frontMaterial !== '<< JAK PŁYTA KORPUS' && frontSurface > 0) {
-            summary[frontMaterial] = (summary[frontMaterial] || 0) + frontSurface;
-        } else if (frontMaterial === '<< JAK PŁYTA KORPUS' && korpusMaterial && frontSurface > 0) {
-            summary[korpusMaterial] = (summary[korpusMaterial] || 0) + frontSurface;
-        }
-        return summary;
+    const szafkiMaterialSummaryObject = szafki.reduce((summary, szafka) => {
+      const korpusMaterial = szafka.plytyKorpus;
+      const korpusSurface = (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0);
+      if (korpusMaterial && korpusSurface > 0) {
+        summary[korpusMaterial] = (summary[korpusMaterial] || 0) + korpusSurface;
+      }
+      const frontMaterial = szafka.plytyFront;
+      const frontSurface = szafka.powierzchniaFront || 0;
+      if (frontMaterial && frontMaterial !== '-- BRAK FRONTU --' && frontMaterial !== '<< JAK PŁYTA KORPUS' && frontSurface > 0) {
+        summary[frontMaterial] = (summary[frontMaterial] || 0) + frontSurface;
+      } else if (frontMaterial === '<< JAK PŁYTA KORPUS' && korpusMaterial && frontSurface > 0) {
+        summary[korpusMaterial] = (summary[korpusMaterial] || 0) + frontSurface;
+      }
+      return summary;
     }, {});
+
+    // ✅ ZMIANA: Sortujemy alfabetycznie, aby zapewnić stabilną kolejność na wydruku
+    const sortedSzafkiMaterialSummary = Object.entries(szafkiMaterialSummaryObject)
+      .sort((a, b) => a[0].localeCompare(b[0]));
 
     const summaryMetrics = {
         iloscSzafek: szafki.length,
@@ -46,8 +57,22 @@ const SummaryDashboard = () => {
         clientData: projectData || {},
         totals: totals,
         summaryMetrics: summaryMetrics,
-        szafkiMaterialSummary: szafkiMaterialSummary,
-        activeSections: Object.entries(calculations).map(([key, data]) => { if (!Array.isArray(data) || data.length === 0) return null; const total = data.reduce((sum, item) => sum + (item.cenaCałość || 0), 0); if (total <= 0) return null; return { key, name: key.charAt(0).toUpperCase() + key.slice(1), data, items: data.reduce((sum, item) => sum + (parseInt(item.ilość) || 1), 0), total, }; }).filter(Boolean),
+        szafkiMaterialSummary: sortedSzafkiMaterialSummary,
+        activeSections: sectionOrder.map(key => {
+        const data = calculations[key];
+        if (!data || !Array.isArray(data) || data.length === 0) return null;
+        
+        const total = data.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
+        if (total <= 0) return null;
+        
+        return {
+          key,
+          name: key.charAt(0).toUpperCase() + key.slice(1),
+          data,
+          items: data.reduce((sum, item) => sum + (parseInt(item.ilość) || 1), 0),
+          total,
+        };
+      }).filter(Boolean), // Usuwamy puste sekcje
     };
   };
 

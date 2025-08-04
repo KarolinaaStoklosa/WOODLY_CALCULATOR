@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase/config';
-import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, serverTimestamp, collection, addDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { useCalculator } from '../hooks/useCalculator';
 
@@ -44,20 +44,26 @@ export const ProjectProvider = ({ children }) => {
   const [calculations, setCalculations] = useState(defaultCalculations);
   const [settings, setSettings] = useState(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeProjectId, setActiveProjectId] = useState('main'); // Domyślny projekt roboczy
+  const [activeProjectId, setActiveProjectId] = useState(null); 
   const [totals, setTotals] = useState({
     materialsTotal: 0, additionalTotal: 0, subtotal: 0, marginAmount: 0, netTotal: 0,
     vatAmount: 0, grossTotal: 0, wasteDetails: {}, hdfCost: 0, transportCost: 0,
     projectCost: 0, servicesCost: 0, doliczoneCost: 0, sectionTotals: {}
   });
 
-  // EFEKT 1: Nasłuchiwanie zmian w Firestore i aktualizacja stanu lokalnego
   useEffect(() => {
     if (!currentUser) {
       setProjectData(null);
       setCalculations(defaultCalculations);
+      setActiveProjectId(null);
       return;
     }
+
+    if (!activeProjectId) {
+      setActiveProjectId('main');
+      return;
+    }
+
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -66,36 +72,16 @@ export const ProjectProvider = ({ children }) => {
         setCalculations(data.calculations || defaultCalculations);
         setSettings(data.settings || defaultSettings);
       } else {
-        // Jeśli dokument nie istnieje, resetujemy stan (np. dla nowego użytkownika)
         setProjectData(null);
         setCalculations(defaultCalculations);
-        setSettings(defaultSettings);
       }
     });
+
     return () => unsubscribe();
   }, [currentUser, activeProjectId]);
 
-  // EFEKT 2: Przeliczanie sum po każdej zmianie w danych
-  useEffect(() => {
-    recalculateAllTotals();
-  }, [calculations, settings]); // Obserwuje tylko `calculations` i `settings`
-
-  // EFEKT 3: Auto-zapis do Firestore z opóźnieniem (debouncing)
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      saveDataToFirestore();
-    }, 2500); // Zapisuj 2.5 sekundy po ostatniej zmianie
-    return () => clearTimeout(handler);
-  }, [projectData, calculations, settings]);
-
-
-  // --- GŁÓWNE FUNKCJE ---
-
-    const updateSectionData = (sectionName, data) => setCalculations(prev => ({ ...prev, [sectionName]: data }));
-  const updateSettings = (newSettings) => setSettings(prev => ({ ...prev, ...newSettings }));
-
   const saveDataToFirestore = useCallback(async () => {
-    if (!currentUser || !projectData) return; // Zapisuj tylko jeśli jest sensowny stan
+    if (!currentUser || !projectData || !activeProjectId) return;
     
     setIsSaving(true);
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId);
@@ -108,33 +94,19 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [currentUser, activeProjectId, projectData, calculations, settings]);
 
-  const recalculateAllTotals = () => {
-    const { grandTotal, sectionTotals } = calculateProjectTotal(calculations);
-    const materialsTotal = grandTotal;
-    const szafki = calculations?.szafki || [];
-    const szuflady = calculations?.szuflady || [];
-    const widocznyBok = calculations?.widocznyBok || [];
-    const korpusyCost = szafki.reduce((sum, item) => sum + (item.cenaKorpus || 0) + (item.cenaPółki || 0), 0);
-    const frontyCost = szafki.reduce((sum, item) => sum + (item.cenaFront || 0), 0);
-    const widocznyBokCost = widocznyBok.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
-    const tylSurface = szafki.reduce((sum, szafka) => sum + ((parseFloat(szafka.szerokość) || 0) * (parseFloat(szafka.wysokość) || 0) / 1000000), 0);
-    const wasteDetails = { korpusy: korpusyCost * (settings.wasteSettings.korpusyPolki / 100), fronty: frontyCost * (settings.wasteSettings.fronty / 100), frontyNaBok: widocznyBokCost * (settings.wasteSettings.frontyNaBok / 100) };
-    const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
-    const hdfCost = (tylSurface * (1 + settings.wasteSettings.tylHdf / 100)) * 6.96;
-    const transportCost = settings.transport.active ? (settings.transport.distance * settings.transport.pricePerKm) : 0;
-    const projectCost = settings.projectTypeActive ? settings.projectTypePrice : 0;
-    const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => sum + (item.pricePerUnit * item.quantity), 0);
-    const { stalaWartoscDoSzafek, plytaNaDnoSzuflady } = settings.doliczone;
-    const doliczoneCost = (stalaWartoscDoSzafek.active ? stalaWartoscDoSzafek.price * szafki.length : 0) + (plytaNaDnoSzuflady.active ? plytaNaDnoSzuflady.surfacePerDrawer * szuflady.length * plytaNaDnoSzuflady.pricePerM2 : 0);
-    const additionalTotal = transportCost + projectCost + servicesCost + doliczoneCost + totalWasteCost + hdfCost;
-    const subtotal = materialsTotal + additionalTotal;
-    const marginAmount = subtotal * (settings.margin / 100);
-    const netTotal = subtotal + marginAmount;
-    const vatAmount = settings.showVAT ? (netTotal * (settings.vatRate / 100)) : 0;
-    const grossTotal = netTotal + vatAmount;
-
-    setTotals({ materialsTotal, additionalTotal, subtotal, marginAmount, netTotal, vatAmount, grossTotal, wasteDetails, hdfCost, transportCost, projectCost, servicesCost, doliczoneCost, sectionTotals });
-  };
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      saveDataToFirestore();
+    }, 2500);
+    return () => clearTimeout(handler);
+  }, [projectData, calculations, settings, saveDataToFirestore]);
+  
+  useEffect(() => {
+    recalculateAllTotals();
+  }, [calculations, settings]);
+  
+  const updateSectionData = (sectionName, data) => setCalculations(prev => ({ ...prev, [sectionName]: data }));
+  const updateSettings = (newSettings) => setSettings(prev => ({ ...prev, ...newSettings }));
 
   const setProjectDataWithDefaults = (data) => {
     if (!data.offerNumber) {
@@ -144,25 +116,140 @@ export const ProjectProvider = ({ children }) => {
     setProjectData(data);
   };
   
+  const createNewProject = async (newProjectData) => {
+    if (!currentUser) return null;
+    const projectWithDefaults = {
+        ...newProjectData,
+        offerNumber: newProjectData.offerNumber || `${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}${new Date().getDate().toString().padStart(2, '0')}/${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`
+    };
+    try {
+      const projectsCollectionRef = collection(db, 'users', currentUser.uid, 'projects');
+      const newDocRef = await addDoc(projectsCollectionRef, {
+        projectData: projectWithDefaults,
+        calculations: defaultCalculations,
+        settings: settings,
+        createdAt: serverTimestamp(),
+        lastSaved: serverTimestamp(),
+      });
+      setActiveProjectId(newDocRef.id);
+      return newDocRef.id;
+    } catch (error) { console.error("Błąd tworzenia nowego projektu:", error); }
+  };
+  
+  const loadProject = (projectId) => setActiveProjectId(projectId);
+  const deleteProject = async (projectId) => {
+    if (!currentUser) return;
+    if (projectId === 'main') {
+        alert("Nie można usunąć głównego projektu roboczego.");
+        return;
+    }
+    try {
+      const docRef = doc(db, 'users', currentUser.uid, 'projects', projectId);
+      await deleteDoc(docRef);
+      if (activeProjectId === projectId) {
+        setActiveProjectId('main');
+      }
+    } catch (error) { console.error("Błąd usuwania projektu:", error); }
+  };
+  
+  const saveProjectToArchive = async () => {
+    if (!currentUser || !projectData) {
+      alert("Brak danych projektu do zapisania.");
+      return;
+    }
+    try {
+      const projectsCollectionRef = collection(db, 'users', currentUser.uid, 'projects');
+      await addDoc(projectsCollectionRef, {
+        projectData,
+        calculations,
+        settings,
+        totals, 
+        createdAt: serverTimestamp(),
+        lastSaved: serverTimestamp(),
+      });
+      alert(`Projekt "${projectData.projectName}" został pomyślnie zapisany w archiwum!`);
+    } catch (error) {
+      console.error("Błąd zapisu do archiwum:", error);
+      alert("Wystąpił błąd podczas zapisywania projektu.");
+    }
+  };
+
+  const exportToJson = () => {
+    if (!projectData) return;
+    const exportData = { projectData, calculations, settings, totals, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${projectData.projectName || 'projekt'}_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const recalculateAllTotals = () => {
+      const { grandTotal, sectionTotals } = calculateProjectTotal(calculations);
+      const materialsTotal = grandTotal;
+      const szafki = calculations?.szafki || [];
+      const szuflady = calculations?.szuflady || [];
+      const widocznyBok = calculations?.widocznyBok || [];
+      const korpusyCost = szafki.reduce((sum, item) => sum + (item.cenaKorpus || 0) + (item.cenaPółki || 0), 0);
+      const frontyCost = szafki.reduce((sum, item) => sum + (item.cenaFront || 0), 0);
+      const widocznyBokCost = widocznyBok.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
+      const tylSurface = szafki.reduce((sum, szafka) => sum + ((parseFloat(szafka.szerokość) || 0) * (parseFloat(szafka.wysokość) || 0) / 1000000), 0);
+      const wasteDetails = {
+        korpusy: korpusyCost * (settings.wasteSettings.korpusyPolki / 100),
+        fronty: frontyCost * (settings.wasteSettings.fronty / 100),
+        frontyNaBok: widocznyBokCost * (settings.wasteSettings.frontyNaBok / 100),
+      };
+      const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
+      const hdfCost = (tylSurface * (1 + settings.wasteSettings.tylHdf / 100)) * 6.96;
+      const transportCost = settings.transport.active ? (settings.transport.distance * settings.transport.pricePerKm) : 0;
+      const projectCost = settings.projectTypeActive ? settings.projectTypePrice : 0;
+      const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => sum + (item.pricePerUnit * item.quantity), 0);
+      const { stalaWartoscDoSzafek, plytaNaDnoSzuflady } = settings.doliczone;
+      const doliczoneCost = (stalaWartoscDoSzafek.active ? stalaWartoscDoSzafek.price * szafki.length : 0) + (plytaNaDnoSzuflady.active ? plytaNaDnoSzuflady.surfacePerDrawer * szuflady.length * plytaNaDnoSzuflady.pricePerM2 : 0);
+      const additionalTotal = transportCost + projectCost + servicesCost + doliczoneCost + totalWasteCost + hdfCost;
+      const subtotal = materialsTotal + additionalTotal;
+      const marginAmount = subtotal * (settings.margin / 100);
+      const netTotal = subtotal + marginAmount;
+      const vatAmount = settings.showVAT ? (netTotal * (settings.vatRate / 100)) : 0;
+      const grossTotal = netTotal + vatAmount;
+      setTotals({
+        materialsTotal, additionalTotal, subtotal, marginAmount, netTotal, vatAmount,
+        grossTotal, wasteDetails, hdfCost, transportCost, projectCost, servicesCost, doliczoneCost,
+        sectionTotals
+      });
+  };
+  
   const resetProject = () => {
     setProjectData(null);
     setCalculations(defaultCalculations);
     setSettings(defaultSettings);
-    // Po resecie stanu, auto-zapis stworzy nowy, pusty dokument w Firestore
+    setActiveProjectId('main');
   };
 
   const contextValue = { 
-    projectData, calculations, settings, totals, isSaving,
+    projectData, calculations, settings, totals, isSaving, activeProjectId,
     setProjectData: setProjectDataWithDefaults, 
-updateSectionData, updateSettings,
- 
-    resetProject,
+    updateSectionData, 
+    updateSettings, 
+    loadProject, createNewProject, deleteProject,
+    saveProjectToArchive,
+    exportToJson,
+    resetProject
   };
 
   return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;
 };
 
-export const useProject = () => useContext(ProjectContext);
+export const useProject = () => {
+  const context = useContext(ProjectContext);
+  if (!context) {
+    throw new Error('useProject musi być używany wewnątrz ProjectProvider');
+  }
+  return context;
+};
+
 export const useProjectSection = (sectionName) => {
   const { calculations, updateSectionData } = useProject();
   const items = calculations[sectionName] || [];
