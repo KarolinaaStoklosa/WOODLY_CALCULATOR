@@ -1,0 +1,29 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* W pliku src/index.css */
+
+@media print {
+  /* Domyślnie ukryj WSZYSTKIE elementy na stronie podczas drukowania */
+  body > * {
+    display: none !important;
+  }
+
+  /* Pokaż TYLKO nasz kontener z ofertą i całą jego zawartość */
+  #printable-offer-root, #printable-offer-root * {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Zresetuj pozycjonowanie kontenera oferty, aby poprawnie wypełnił stronę wydruku */
+  #printable-offer-root {
+    position: static !important;
+  }
+}
