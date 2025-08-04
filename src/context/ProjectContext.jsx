@@ -4,26 +4,15 @@ import { useCalculator } from '../hooks/useCalculator';
 const ProjectContext = createContext();
 
 const defaultCalculations = {
-  szafki: [],
-  szuflady: [],
-  widocznyBok: [],
-  drzwiPrzesuwne: [],
-  uchwyty: [],
-  zawiasy: [],
-  podnosniki: [],
-  blaty: [],
-  akcesoria: []
+  szafki: [], szuflady: [], widocznyBok: [], drzwiPrzesuwne: [],
+  uchwyty: [], zawiasy: [], podnosniki: [], blaty: [], akcesoria: []
 };
 
 const defaultSettings = {
-  margin: 30,
-  showVAT: true,
-  vatRate: 23,
+  margin: 30, showVAT: true, vatRate: 23,
   wasteSettings: { korpusyPolki: 20, fronty: 25, frontyNaBok: 25, tylHdf: 15 },
   transport: { distance: 0, pricePerKm: 4.00, active: false },
-  projectType: 'KUCHNIA',
-  projectTypePrice: 1000.00,
-  projectTypeActive: false,
+  projectType: 'KUCHNIA', projectTypePrice: 1000.00, projectTypeActive: false,
   serviceItems: [
     { id: 1, name: 'PUNKT WIERCENIA CNC', pricePerUnit: 16.00, quantity: 11, unit: 'szt', active: true },
     { id: 2, name: 'WIZJA LOKALNA I POMIAR', pricePerUnit: 100.00, quantity: 0, unit: 'godz', active: false },
@@ -44,6 +33,15 @@ const defaultSettings = {
   ],
 };
 
+const generateOfferNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+  return `${year}${month}${day}/${random}`;
+};
+
 export const ProjectProvider = ({ children }) => {
   const [projectData, setProjectData] = useState(null);
   const [calculations, setCalculations] = useState(defaultCalculations);
@@ -56,13 +54,15 @@ export const ProjectProvider = ({ children }) => {
 
   const { calculateProjectTotal } = useCalculator();
 
-  useEffect(() => {
-    loadCurrentProject();
-  }, []);
+  const handleSetProjectData = (data) => {
+    if (!data.offerNumber) {
+      data.offerNumber = generateOfferNumber();
+    }
+    setProjectData(data);
+  };
 
-  useEffect(() => {
-    recalculateAllTotals();
-  }, [calculations, settings]);
+  useEffect(() => { loadCurrentProject(); }, []);
+  useEffect(() => { recalculateAllTotals(); }, [calculations, settings, projectData]);
 
   const loadCurrentProject = () => {
     try {
@@ -75,7 +75,6 @@ export const ProjectProvider = ({ children }) => {
       const savedSettings = localStorage.getItem('mebelcalc-calculation-settings');
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
-        // Łączymy zapisane ustawienia z domyślnymi, aby uniknąć błędów
         setSettings(prev => ({ ...defaultSettings, ...prev, ...parsed }));
       }
     } catch (error) { console.error('Błąd ładowania projektu:', error); }
@@ -88,13 +87,8 @@ export const ProjectProvider = ({ children }) => {
     localStorage.setItem('mebelcalc-calculation-settings', JSON.stringify(settings));
   };
 
-  const updateSectionData = (sectionName, data) => {
-    setCalculations(prev => ({ ...prev, [sectionName]: data }));
-  };
-
-  const updateSettings = (newSettings) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
-  };
+  const updateSectionData = (sectionName, data) => setCalculations(prev => ({ ...prev, [sectionName]: data }));
+  const updateSettings = (newSettings) => setSettings(prev => ({ ...prev, ...newSettings }));
   
   const saveProjectToArchive = () => {
     if (!projectData) return;
@@ -104,9 +98,7 @@ export const ProjectProvider = ({ children }) => {
       archive.unshift(projectToSave);
       localStorage.setItem('mebelcalc_archive', JSON.stringify(archive));
       alert('Projekt zapisany w archiwum!');
-    } catch (error) {
-      console.error('Błąd zapisu do archiwum', error);
-    }
+    } catch (error) { console.error('Błąd zapisu do archiwum', error); }
   };
 
   const exportToJson = () => {
@@ -124,39 +116,31 @@ export const ProjectProvider = ({ children }) => {
   const recalculateAllTotals = () => {
     const { grandTotal, sectionTotals } = calculateProjectTotal(calculations);
     const materialsTotal = grandTotal;
-    
     const szafki = calculations?.szafki || [];
     const szuflady = calculations?.szuflady || [];
     const widocznyBok = calculations?.widocznyBok || [];
-
     const korpusyCost = szafki.reduce((sum, item) => sum + (item.cenaKorpus || 0) + (item.cenaPółki || 0), 0);
     const frontyCost = szafki.reduce((sum, item) => sum + (item.cenaFront || 0), 0);
     const widocznyBokCost = widocznyBok.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
     const tylSurface = szafki.reduce((sum, szafka) => sum + ((parseFloat(szafka.szerokość) || 0) * (parseFloat(szafka.wysokość) || 0) / 1000000), 0);
-    
     const wasteDetails = {
       korpusy: korpusyCost * (settings.wasteSettings.korpusyPolki / 100),
       fronty: frontyCost * (settings.wasteSettings.fronty / 100),
       frontyNaBok: widocznyBokCost * (settings.wasteSettings.frontyNaBok / 100),
     };
     const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
-
     const hdfCost = (tylSurface * (1 + settings.wasteSettings.tylHdf / 100)) * 6.96;
     const transportCost = settings.transport.active ? (settings.transport.distance * settings.transport.pricePerKm) : 0;
     const projectCost = settings.projectTypeActive ? settings.projectTypePrice : 0;
     const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => sum + (item.pricePerUnit * item.quantity), 0);
-
     const { stalaWartoscDoSzafek, plytaNaDnoSzuflady } = settings.doliczone;
-    const doliczoneCost = (stalaWartoscDoSzafek.active ? stalaWartoscDoSzafek.price * szafki.length : 0) + 
-                          (plytaNaDnoSzuflady.active ? plytaNaDnoSzuflady.surfacePerDrawer * szuflady.length * plytaNaDnoSzuflady.pricePerM2 : 0);
-    
+    const doliczoneCost = (stalaWartoscDoSzafek.active ? stalaWartoscDoSzafek.price * szafki.length : 0) + (plytaNaDnoSzuflady.active ? plytaNaDnoSzuflady.surfacePerDrawer * szuflady.length * plytaNaDnoSzuflady.pricePerM2 : 0);
     const additionalTotal = transportCost + projectCost + servicesCost + doliczoneCost + totalWasteCost + hdfCost;
     const subtotal = materialsTotal + additionalTotal;
     const marginAmount = subtotal * (settings.margin / 100);
     const netTotal = subtotal + marginAmount;
     const vatAmount = settings.showVAT ? (netTotal * (settings.vatRate / 100)) : 0;
     const grossTotal = netTotal + vatAmount;
-
     setTotals({
       materialsTotal, additionalTotal, subtotal, marginAmount, netTotal, vatAmount,
       grossTotal, wasteDetails, hdfCost, transportCost, projectCost, servicesCost, doliczoneCost,
@@ -165,10 +149,22 @@ export const ProjectProvider = ({ children }) => {
     saveCurrentData();
   };
 
+  const resetProject = () => {
+    setProjectData(null);
+    setCalculations(defaultCalculations);
+    localStorage.removeItem('mebelcalc_current_project');
+    alert('Rozpoczęto nowy projekt. Możesz teraz wprowadzić dane.');
+  };
+
+  // ✅ ZMIANA: Upewniamy się, że wszystkie potrzebne funkcje są eksportowane
   const contextValue = { 
     projectData, calculations, settings, totals, 
-    setProjectData, updateSectionData, updateSettings, 
-    saveProjectToArchive, exportToJson 
+    setProjectData: handleSetProjectData, 
+    updateSectionData, 
+    updateSettings, 
+    resetProject,
+    saveProjectToArchive,
+    exportToJson
   };
 
   return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;
@@ -182,12 +178,28 @@ export const useProject = () => {
   return context;
 };
 
+// ✅ ZMIANA: Ten hook jest teraz uproszczony i w pełni spójny z Providerem
 export const useProjectSection = (sectionName) => {
   const { calculations, updateSectionData } = useProject();
   const items = calculations[sectionName] || [];
+  
+  // Obliczanie sumy jest teraz lokalne dla hooka, nie zależy od kontekstu
   const total = (items || []).reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
-  const addItem = (newItem) => updateSectionData(sectionName, [...items, { ...newItem, id: Date.now() + Math.random() }]);
-  const updateItem = (id, updates) => updateSectionData(sectionName, items.map(item => item.id === id ? { ...item, ...updates } : item));
-  const removeItem = (id) => updateSectionData(sectionName, items.filter(item => item.id !== id));
+
+  const addItem = (newItem) => {
+    const updatedItems = [...items, { ...newItem, id: Date.now() + Math.random() }];
+    updateSectionData(sectionName, updatedItems);
+  };
+  
+  const updateItem = (id, updates) => {
+    const updatedItems = items.map(item => item.id === id ? { ...item, ...updates } : item);
+    updateSectionData(sectionName, updatedItems);
+  };
+  
+  const removeItem = (id) => {
+    const updatedItems = items.filter(item => item.id !== id);
+    updateSectionData(sectionName, updatedItems);
+  };
+  
   return { items, total, addItem, updateItem, removeItem, sectionName };
 };

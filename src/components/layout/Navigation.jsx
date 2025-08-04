@@ -6,8 +6,11 @@ import {
   FileInput, DollarSign, PieChart, X, Users,
   ChevronRight, Sparkles
 } from 'lucide-react';
+import { useProject } from '../../context/ProjectContext';
 
 const Navigation = ({ activeTab, setActiveTab, isOpen, closeSidebar, onNewProject }) => {
+
+  const { resetProject } = useProject();
   
   const menuItems = [
     // 📂 SEKCJA PROJEKTU
@@ -153,6 +156,7 @@ const Navigation = ({ activeTab, setActiveTab, isOpen, closeSidebar, onNewProjec
   const handleNewProject = () => {
     if (confirm('🆕 Rozpocząć nowy projekt?\n\nObecne dane zostaną zapisane automatycznie, a formularz nowego projektu zostanie otwarty.')) {
       onNewProject?.();
+      resetProject();
       setActiveTab('projectSetup');
       if (isOpen) closeSidebar();
     }

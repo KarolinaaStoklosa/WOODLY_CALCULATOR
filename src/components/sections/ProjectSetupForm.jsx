@@ -1,11 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProject } from '../../context/ProjectContext';
-import { File, User, Calendar, Settings } from 'lucide-react';
+import { File, User, Calendar, Hash } from 'lucide-react';
+
+// Helper do generowania numeru oferty
+const generateOfferNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+  return `${year}${month}${day}/${random}`;
+};
 
 const ProjectSetupForm = ({ onComplete }) => {
-  const { setProjectData } = useProject();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  // Pobieramy istniejące dane projektu oraz funkcję do ich aktualizacji
+  const { projectData, setProjectData } = useProject();
+  
+  // Inicjalizujemy formularz domyślnymi wartościami z kontekstu
+  const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm({
+    defaultValues: projectData || {}
+  });
+
+  // Używamy useEffect do synchronizacji formularza
+  useEffect(() => {
+    // Jeśli wczytujemy istniejący projekt, zresetuj formularz jego danymi
+    if (projectData) {
+      reset(projectData);
+    } else {
+      // Jeśli to nowy projekt, wygeneruj i ustaw domyślny numer oferty
+      setValue('offerNumber', generateOfferNumber());
+    }
+  }, [projectData, reset, setValue]);
 
   const onSubmit = (data) => {
     setProjectData(data);
@@ -16,21 +42,24 @@ const ProjectSetupForm = ({ onComplete }) => {
     <div className="p-6 md:p-8 bg-white">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Nowy Projekt</h1>
-          <p className="text-gray-600 mt-2">Wprowadź podstawowe informacje, aby rozpocząć kalkulację.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dane Projektu</h1>
+          <p className="text-gray-600 mt-2">Wprowadź lub zaktualizuj informacje o projekcie.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          {/* --- SEKCJA DANYCH PROJEKTU --- */}
           <div className="p-6 border rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><File className="w-5 h-5 mr-2 text-blue-600" />Dane Projektu</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Nazwa Projektu" name="projectName" register={register} required errors={errors} placeholder="np. Kuchnia dla Jana Kowalskiego" />
-              <Input label="Typ Projektu" name="projectType" register={register} required errors={errors} placeholder="np. Kuchnia, Szafa, Garderoba" />
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><File className="w-5 h-5 mr-2 text-blue-600" />Dane Główne</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <Input label="Nazwa Projektu" name="projectName" register={register} required errors={errors} placeholder="np. Kuchnia dla Jana Kowalskiego" />
+              </div>
+              <Input label="Numer Oferty" name="offerNumber" register={register} required errors={errors} />
+              <div className="md:col-span-3">
+                <Input label="Typ Projektu" name="projectType" register={register} required errors={errors} placeholder="np. Kuchnia, Szafa, Garderoba" />
+              </div>
             </div>
           </div>
           
-          {/* --- SEKCJA DANYCH KLIENTA --- */}
           <div className="p-6 border rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><User className="w-5 h-5 mr-2 text-blue-600" />Dane Klienta</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -41,7 +70,6 @@ const ProjectSetupForm = ({ onComplete }) => {
             </div>
           </div>
 
-          {/* --- SEKCJA DANYCH REALIZACJI --- */}
           <div className="p-6 border rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><Calendar className="w-5 h-5 mr-2 text-blue-600" />Dane Realizacji</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -52,7 +80,7 @@ const ProjectSetupForm = ({ onComplete }) => {
 
           <div className="pt-6 text-right">
             <button type="submit" className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors">
-              Rozpocznij Kalkulację
+              Zapisz i Kontynuuj
             </button>
           </div>
         </form>
@@ -61,7 +89,6 @@ const ProjectSetupForm = ({ onComplete }) => {
   );
 };
 
-// Komponent pomocniczy dla inputów
 const Input = ({ label, name, register, required, errors, type = 'text', placeholder }) => (
     <div>
         <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
