@@ -7,9 +7,7 @@ const FinalOfferPrint = ({ offerData, onClose }) => {
 
   const handlePrint = () => {
     if (!printRef.current) return;
-    const printHtml = ReactDOMServer.renderToStaticMarkup(
-      <PrintableContent {...offerData} />
-    );
+    const printHtml = ReactDOMServer.renderToStaticMarkup(<PrintableContent {...offerData} />);
     const printCss = `body { font-family: Arial, sans-serif; margin: 0; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; } @page { size: A4; margin: 0; } .no-break { page-break-inside: avoid; }`;
     const printWindow = window.open('', '_blank');
     const offerNumber = offerData?.clientData?.offerNumber || 'oferta';
@@ -52,27 +50,17 @@ const SubsequentPageHeader = ({ companyData, offerNumber }) => (
   </div>
 );
 
-const PrintableContent = React.forwardRef(({ companyData, clientData, totals, activeSections }, ref) => {
+const PrintableContent = React.forwardRef(({ companyData, clientData, totals, activeSections, summaryMetrics, szafkiMaterialSummary }, ref) => {
   const offerNumber = clientData?.offerNumber || 'Brak numeru';
   const formatPrice = (price = 0) => `${price.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} zł`;
+  const formatSurface = (surface = 0) => `${surface.toFixed(2).replace('.', ',')} m²`;
   const { grossTotal, netTotal } = totals || {};
-  
-  const cardStyle = {
-    background: '#f8fafc',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    padding: '6mm',
-    pageBreakInside: 'avoid',
-  };
-  const sectionHeadingStyle = {
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#2563eb',
-    margin: '0 0 5mm 0',
-  };
+  const cardStyle = { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6mm', pageBreakInside: 'avoid' };
+  const sectionHeadingStyle = { fontSize: '16px', fontWeight: 'bold', color: '#2563eb', margin: '0 0 5mm 0' };
 
   return (
     <div ref={ref} style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', lineHeight: '1.5', color: '#333', background: 'white' }}>
+      {/* --- STRONA 1 --- */}
       <div style={{ padding: '20mm', boxSizing: 'border-box', minHeight: '297mm', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: '1 0 auto' }}>
           <div style={{ borderTop: '4px solid #2563eb', paddingTop: '10mm', marginBottom: '10mm' }}>
@@ -81,7 +69,7 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
                     {companyData?.logo ? (<img src={companyData.logo} alt="Logo" style={{ maxHeight: '100%', maxWidth: '100%' }} />) : (<div style={{ fontSize: '12px', color: '#666' }}>LOGO FIRMY</div>)}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 5mm 0' }}>{companyData?.name}</h1>
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 5mm 0' }}>{companyData?.name || 'Nazwa Firmy'}</h1>
                     <p style={{ margin: 0 }}>{companyData?.address}, {companyData?.city}<br/>NIP: {companyData?.nip}</p>
                     <p style={{ margin: '5mm 0 0 0', fontSize: '11px', color: '#6b7280' }}>{companyData?.website} | {companyData?.email} | {companyData?.phone}</p>
                 </div>
@@ -115,24 +103,29 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
             <div>
                 <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#2563eb', borderBottom: '1px solid #ddd', paddingBottom: '2mm', margin: '0 0 4mm 0' }}>DANE REALIZACJI</h3>
                 <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-                    <div><strong>Gwarancja:</strong> {companyData?.warranty}</div>
-                    <div><strong>Czas realizacji:</strong> {companyData?.deliveryTime}</div>
+                    <div><strong>Gwarancja:</strong> {companyData?.warranty || '—'}</div>
+                    <div><strong>Czas realizacji:</strong> {companyData?.deliveryTime || '—'}</div>
                     <div><strong>Termin:</strong> {clientData?.deadline || 'Do uzgodnienia'}</div>
                     <div><strong>Montaż:</strong> {clientData?.installationAddress || 'Jak wyżej'}</div>
                 </div>
             </div>
           </div>
         </div>
-        {companyData?.backgroundImage && (<div style={{ marginTop: '10mm', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', padding: 0 }}><div style={{ background: '#2563eb', color: 'white', padding: '3mm', fontSize: '13px', fontWeight: 'bold' }}>🏠 NASZE REALIZACJE</div><img src={companyData.backgroundImage} alt="Realizacje" style={{ width: '100%', objectFit: 'cover' }} /></div>)}
+        {companyData?.backgroundImage && (<div style={{ marginTop: '10mm', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', padding: 0, border: '1px solid #e2e8f0' }}><div style={{ background: '#2563eb', color: 'white', padding: '3mm', fontSize: '13px', fontWeight: 'bold' }}></div><img src={companyData.backgroundImage} alt="Realizacje" style={{ width: '100%', objectFit: 'cover' }} /></div>)}
       </div>
 
+      {/* --- STRONA 2 --- */}
       <div style={{ pageBreakBefore: 'always', padding: '20mm', boxSizing: 'border-box', minHeight: '297mm', display: 'flex', flexDirection: 'column' }}>
         <SubsequentPageHeader companyData={companyData} offerNumber={offerNumber} />
         <div style={{ flex: '1 0 auto' }}>
           <div style={{ ...cardStyle, marginBottom: '6mm' }}>
             <h2 style={sectionHeadingStyle}>UŻYTE MATERIAŁY I AKCESORIA</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4mm 8mm' }}>
-              {(activeSections || []).map((section) => (<div key={section.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '3mm' }}><div style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151' }}>{section.name}</div><div style={{ fontSize: '12px', fontWeight: 'bold', color: '#2563eb' }}>{section.items} szt</div></div>))}
+              <SummaryItem label="ILOŚĆ SZAFEK" value={`${summaryMetrics?.iloscSzafek || 0} szt`} />
+              <SummaryItem label="KORPUSY + PÓŁKI" value={formatSurface(summaryMetrics?.powierzchniaKorpusyPolki)} />
+              <SummaryItem label="FRONTY" value={formatSurface(summaryMetrics?.powierzchniaFronty)} />
+              <SummaryItem label="BLATY (PRODUKTY)" value={`${summaryMetrics?.iloscBlatowProduktow || 0} szt`} />
+              {(activeSections || []).filter(s => ['uchwyty', 'zawiasy', 'szuflady', 'akcesoria', 'drzwiPrzesuwne'].includes(s.key)).map(section => <SummaryItem key={section.key} label={section.name.toUpperCase()} value={`${section.items} szt`} />)}
             </div>
           </div>
           <div style={{ ...cardStyle }}>
@@ -159,6 +152,7 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
         </div>
       </div>
       
+      {/* --- STRONA 3+ --- */}
       <table style={{ pageBreakBefore: 'always', width: '100%', borderCollapse: 'collapse' }}>
         <thead style={{ display: 'table-header-group' }}>
           <tr><td style={{ padding: '20mm 20mm 0 20mm' }}><SubsequentPageHeader companyData={companyData} offerNumber={offerNumber} /></td></tr>
@@ -170,16 +164,25 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
               {(activeSections || []).map((section) => (
                   <div key={section.key} style={{ pageBreakInside: 'avoid', marginBottom: '6mm' }}>
                       <div style={{ background: '#f1f5f9', padding: '3mm 6mm', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{section.name}</span>
+                          <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{section.name.toUpperCase()}</span>
                           <span style={{ fontSize: '12px', color: '#475569' }}>{section.data.length} pozycji</span>
                       </div>
                       <div style={{ border: '1px solid #e2e8f0', borderTop: 'none', padding: '4mm' }}>
-                          {(section.data || []).map((item, idx) => (
-                              <div key={idx} style={{ padding: '3mm 4mm', borderBottom: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                                  <span>{idx + 1}. {item.rodzaj || `Szafka ${item.szerokość}x${item.wysokość}`}</span>
-                                  <span style={{ fontWeight: 'bold' }}>{item.ilość || 1} szt.</span>
-                              </div>
-                          ))}
+                          {section.key === 'szafki' 
+                            ? ( Object.entries(szafkiMaterialSummary || {}).map(([material, surface], idx) => (
+                                <div key={idx} style={{ padding: '3mm 4mm', borderBottom: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span>{idx + 1}. {material}</span>
+                                    <span style={{ fontWeight: 'bold' }}>{formatSurface(surface)}</span>
+                                </div>
+                                ))
+                            )
+                            : (section.data || []).map((item, idx) => (
+                                <div key={idx} style={{ padding: '3mm 4mm', borderBottom: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                    <span>{idx + 1}. {item.rodzaj}</span>
+                                    <span style={{ fontWeight: 'bold' }}>{item.ilość || 1} szt.</span>
+                                </div>
+                            ))
+                          }
                       </div>
                   </div>
               ))}
@@ -190,5 +193,12 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
     </div>
   );
 });
+
+const SummaryItem = ({ label, value }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '3mm' }}>
+    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151' }}>{label}</div>
+    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#2563eb' }}>{value}</div>
+  </div>
+);
 
 export default FinalOfferPrint;

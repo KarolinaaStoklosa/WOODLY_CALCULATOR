@@ -1,38 +1,67 @@
 import React from 'react';
-import { Calculator, Download, Save, TrendingUp, Package, DollarSign } from 'lucide-react';
+import { Download, Save, TrendingUp, Package, DollarSign, Calculator } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
-import { useProjectMetrics } from '../../hooks/useProjectMetrics';
+import { getDropdownOptions } from '../../data/dropdowns';
 import OfferButtons from '../ui/OfferButtons';
 
 const SummaryDashboard = () => {
-  // Pobieramy wszystkie aktualne dane z centralnego stanu
   const { projectData, calculations, settings, totals, saveProjectToArchive, exportToJson } = useProject();
-  const { calculateAggregatedMetrics } = useProjectMetrics();
-  const metrics = calculateAggregatedMetrics(calculations);
 
-  const formatPrice = (price = 0) => `${price.toFixed(2)} zł`;
+  const formatPrice = (price = 0) => `${price.toFixed(2).replace('.', ',')} zł`;
+  const formatSurface = (surface = 0) => `${surface.toFixed(2).replace('.', ',')} m²`;
+  
+  // Ta funkcja przygotowuje wszystkie dane w odpowiednim formacie dla komponentu oferty
+  const getOfferData = () => {
+    const szafki = calculations?.szafki || [];
+    const blaty = calculations?.blaty || [];
+    const blatyOptions = getDropdownOptions('blaty');
 
-  // Tworzymy jeden, kompletny obiekt z danymi dla oferty
-  const offerData = {
-    companyData: {
-      name: settings.companyName,
-      address: settings.companyAddress,
-      city: settings.companyCity,
-      nip: settings.companyNip,
-      website: settings.companyWebsite,
-      email: settings.companyEmail,
-      phone: settings.companyPhone,
-      logo: settings.logo,
-      backgroundImage: settings.backgroundImage,
-      warranty: settings.gwarancja,
-      deliveryTime: settings.czasRealizacji,
-      terms: (settings.warunki || []).map(item => item.text),
-      exclusions: (settings.wykluczenia || []).map(item => item.text),
-    },
-    clientData: projectData || {},
-    totals: totals,
-    activeSections: Object.entries(calculations)
-      .map(([key, data]) => {
+    // Agregacja materiałów dla szafek (korpusy + fronty)
+    const szafkiMaterialSummary = szafki.reduce((summary, szafka) => {
+      const korpusMaterial = szafka.plytyKorpus;
+      const korpusSurface = (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0);
+      if (korpusMaterial && korpusSurface > 0) {
+        summary[korpusMaterial] = (summary[korpusMaterial] || 0) + korpusSurface;
+      }
+      
+      const frontMaterial = szafka.plytyFront;
+      const frontSurface = szafka.powierzchniaFront || 0;
+      if (frontMaterial && frontMaterial !== '-- BRAK FRONTU --' && frontMaterial !== '<< JAK PŁYTA KORPUS' && frontSurface > 0) {
+        summary[frontMaterial] = (summary[frontMaterial] || 0) + frontSurface;
+      } else if (frontMaterial === '<< JAK PŁYTA KORPUS' && korpusMaterial && frontSurface > 0) {
+        summary[korpusMaterial] = (summary[korpusMaterial] || 0) + frontSurface;
+      }
+      
+      return summary;
+    }, {});
+
+    // Metryki dla podsumowania w ofercie
+    const summaryMetrics = {
+      iloscSzafek: szafki.length,
+      powierzchniaKorpusyPolki: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0), 0),
+      powierzchniaFronty: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaFront || 0), 0),
+      iloscBlatowProduktow: blaty.reduce((sum, b) => {
+        const itemInfo = blatyOptions.find(opt => opt.nazwa === b.rodzaj);
+        if (itemInfo && itemInfo.typ === 'produkt') {
+          return sum + (parseFloat(b.ilość) || 0);
+        }
+        return sum;
+      }, 0)
+    };
+
+    return {
+      companyData: {
+        name: settings.companyName, address: settings.companyAddress, city: settings.companyCity, nip: settings.companyNip,
+        website: settings.companyWebsite, email: settings.companyEmail, phone: settings.companyPhone, logo: settings.logo,
+        backgroundImage: settings.backgroundImage, warranty: settings.gwarancja, deliveryTime: settings.czasRealizacji,
+        terms: (settings.warunki || []).map(item => item.text),
+        exclusions: (settings.wykluczenia || []).map(item => item.text),
+      },
+      clientData: projectData || {},
+      totals: totals,
+      summaryMetrics: summaryMetrics,
+      szafkiMaterialSummary: szafkiMaterialSummary,
+      activeSections: Object.entries(calculations).map(([key, data]) => {
         if (!Array.isArray(data) || data.length === 0) return null;
         const total = data.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
         if (total <= 0) return null;
@@ -43,15 +72,18 @@ const SummaryDashboard = () => {
           items: data.reduce((sum, item) => sum + (parseInt(item.ilość) || 1), 0),
           total,
         };
-      })
-      .filter(Boolean),
+      }).filter(Boolean),
+    };
   };
+
+  const offerData = getOfferData();
+  const itemCount = Object.values(calculations).flat().length;
 
   const stats = [
     { title: 'Wartość materiałów', value: formatPrice(totals.materialsTotal), icon: Package, color: 'blue' },
     { title: 'Pozostałe koszty', value: formatPrice(totals.additionalTotal), icon: DollarSign, color: 'amber' },
     { title: 'Wartość całkowita', value: formatPrice(totals.grossTotal), icon: TrendingUp, color: 'green' },
-    { title: 'Liczba pozycji', value: Object.values(calculations).flat().length, icon: Calculator, color: 'purple' }
+    { title: 'Liczba pozycji', value: itemCount, icon: Calculator, color: 'purple' }
   ];
 
   const sectionLabels = {
@@ -120,37 +152,13 @@ const SummaryDashboard = () => {
 };
 
 const StatCard = ({ title, value, icon: Icon, color }) => {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    amber: 'bg-amber-50 text-amber-700 border-amber-200',
-    green: 'bg-green-50 text-green-700 border-green-200',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200'
-  };
-  return (
-    <div className={`p-6 rounded-xl border ${colorClasses[color]}`}>
-      <div className="flex items-center justify-between mb-3">
-        <Icon className="w-8 h-8" />
-        <div className="text-2xl font-bold">{value}</div>
-      </div>
-      <div className="font-semibold mb-1">{title}</div>
-    </div>
-  );
+  const colorClasses = { blue: 'bg-blue-50 text-blue-700 border-blue-200', amber: 'bg-amber-50 text-amber-700 border-amber-200', green: 'bg-green-50 text-green-700 border-green-200', purple: 'bg-purple-50 text-purple-700 border-purple-200' };
+  return ( <div className={`p-6 rounded-xl border ${colorClasses[color]}`}><div className="flex items-center justify-between mb-3"><Icon className="w-8 h-8" /><div className="text-2xl font-bold">{value}</div></div><div className="font-semibold mb-1">{title}</div></div> );
 };
 
 const ActionButton = ({ icon: Icon, text, subtext, onClick, color }) => {
-  const colorClasses = {
-    green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
-    purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700'
-  };
-  return(
-    <button onClick={onClick} className={`w-full flex items-center p-4 bg-gradient-to-br text-white rounded-xl transition-all transform hover:scale-105 shadow-lg ${colorClasses[color]}`}>
-      <Icon className="w-7 h-7 mr-4" />
-      <div className="text-left">
-        <span className="font-bold text-base">{text}</span>
-        <span className="text-sm opacity-90 block">{subtext}</span>
-      </div>
-    </button>
-  );
+  const colorClasses = { green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700', purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700' };
+  return( <button onClick={onClick} className={`w-full flex items-center p-4 bg-gradient-to-br text-white rounded-xl transition-all transform hover:scale-105 shadow-lg ${colorClasses[color]}`}><Icon className="w-7 h-7 mr-4" /><div className="text-left"><span className="font-bold text-base">{text}</span><span className="text-sm opacity-90 block">{subtext}</span></div></button> );
 };
 
 export default SummaryDashboard;
