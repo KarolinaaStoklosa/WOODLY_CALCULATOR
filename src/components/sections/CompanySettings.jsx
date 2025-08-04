@@ -1,13 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProject } from '../../context/ProjectContext';
-import { Building, Link, Edit3, Image, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { storage } from '../../firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Building, Link, Edit3, Image, Plus, Trash2, Loader2 } from 'lucide-react';
 
 const CompanySettings = () => {
   const { settings, updateSettings } = useProject();
+  const { currentUser } = useAuth();
   const { register, handleSubmit, reset, setValue, watch } = useForm({ defaultValues: settings });
+  
+  const [isUploading, setIsUploading] = useState({ logo: false, backgroundImage: false });
 
-  // Obserwuj zmiany w logo i zdjęciu w tle, aby odświeżyć podgląd
   const logoPreview = watch('logo');
   const backgroundImagePreview = watch('backgroundImage');
 
@@ -20,15 +25,23 @@ const CompanySettings = () => {
     alert('Dane firmy zostały zaktualizowane!');
   };
 
-  const handleFileChange = (e, fieldName) => {
+  const handleFileChange = async (e, fieldName) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Zapisujemy obraz jako Data URL (Base64) w stanie formularza
-        setValue(fieldName, reader.result, { shouldDirty: true });
-      };
-      reader.readAsDataURL(file);
+    if (!file || !currentUser) return;
+
+    setIsUploading(prev => ({ ...prev, [fieldName]: true }));
+    const storageRef = ref(storage, `company_assets/${currentUser.uid}/${fieldName}_${file.name}`);
+
+    try {
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      setValue(fieldName, downloadURL, { shouldDirty: true });
+      updateSettings({ [fieldName]: downloadURL });
+    } catch (error) {
+      console.error("Błąd podczas wysyłania pliku:", error);
+      alert("Wystąpił błąd podczas wysyłania pliku.");
+    } finally {
+      setIsUploading(prev => ({ ...prev, [fieldName]: false }));
     }
   };
 
@@ -43,23 +56,23 @@ const CompanySettings = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <Section title="Dane Firmowe" icon={Building}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Nazwa Firmy" name="companyName" register={register} />
+              <Input label="Nazwa Firmy" name="companyName" register={register} placeholder="MebelCalc Pro Sp. z o.o." />
               <Input label="NIP" name="companyNip" register={register} />
               <Input label="Adres (ulica, nr)" name="companyAddress" register={register} />
               <Input label="Adres (kod, miasto)" name="companyCity" register={register} />
             </div>
           </Section>
-          
+
           <Section title="Materiały Graficzne" icon={Image}>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FileInput label="Logo Firmy" name="logo" onChange={handleFileChange} preview={logoPreview} />
-                <FileInput label="Zdjęcie w tle (dla ofert)" name="backgroundImage" onChange={handleFileChange} preview={backgroundImagePreview} />
+                <FileInput label="Logo Firmy" name="logo" onChange={handleFileChange} preview={logoPreview} loading={isUploading.logo} />
+                <FileInput label="Zdjęcie w tle (dla ofert)" name="backgroundImage" onChange={handleFileChange} preview={backgroundImagePreview} loading={isUploading.backgroundImage} />
              </div>
           </Section>
 
           <Section title="Dane Kontaktowe" icon={Link}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Input label="Strona WWW" name="companyWebsite" register={register} />
+              <Input label="Strona WWW" name="companyWebsite" register={register} placeholder="www.twojafirma.pl" />
               <Input label="Email" name="companyEmail" register={register} type="email" />
               <Input label="Telefon" name="companyPhone" register={register} type="tel" />
             </div>
@@ -110,12 +123,18 @@ const Input = ({ label, name, register, placeholder, type = 'text' }) => (
     </div>
 );
 
-const FileInput = ({ label, name, onChange, preview }) => (
+const FileInput = ({ label, name, onChange, preview, loading }) => (
     <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <div className="flex items-center gap-4">
-            {preview ? <img src={preview} alt="Podgląd" className="w-16 h-16 object-contain border rounded-md" /> : <div className="w-16 h-16 border rounded-md bg-gray-50 flex items-center justify-center text-gray-400">Podgląd</div>}
-            <input type="file" accept="image/*" onChange={(e) => onChange(e, name)} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            <div className="w-16 h-16 border rounded-md bg-gray-50 flex items-center justify-center text-gray-400 relative shrink-0">
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                preview ? <img src={preview} alt="Podgląd" className="w-full h-full object-contain" /> : "Podgląd"
+              )}
+            </div>
+            <input type="file" accept="image/*" onChange={(e) => onChange(e, name)} disabled={loading} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50" />
         </div>
     </div>
 );
@@ -128,7 +147,7 @@ const EditableTextList = ({ label, items, onUpdate }) => {
         onUpdate(items.filter(item => item.id !== id));
     };
     const handleAdd = () => {
-        onUpdate([...items, { id: Date.now(), text: '' }]);
+        onUpdate([...(items || []), { id: Date.now(), text: '' }]);
     };
 
     return (

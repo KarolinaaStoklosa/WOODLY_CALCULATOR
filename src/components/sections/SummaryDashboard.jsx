@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Save, TrendingUp, Package, DollarSign, Calculator } from 'lucide-react';
+import { Calculator, Download, Save, TrendingUp, Package, DollarSign } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { getDropdownOptions } from '../../data/dropdowns';
 import OfferButtons from '../ui/OfferButtons';
@@ -8,71 +8,46 @@ const SummaryDashboard = () => {
   const { projectData, calculations, settings, totals, saveProjectToArchive, exportToJson } = useProject();
 
   const formatPrice = (price = 0) => `${price.toFixed(2).replace('.', ',')} zł`;
-  const formatSurface = (surface = 0) => `${surface.toFixed(2).replace('.', ',')} m²`;
   
-  // Ta funkcja przygotowuje wszystkie dane w odpowiednim formacie dla komponentu oferty
   const getOfferData = () => {
     const szafki = calculations?.szafki || [];
     const blaty = calculations?.blaty || [];
     const blatyOptions = getDropdownOptions('blaty');
 
-    // Agregacja materiałów dla szafek (korpusy + fronty)
     const szafkiMaterialSummary = szafki.reduce((summary, szafka) => {
-      const korpusMaterial = szafka.plytyKorpus;
-      const korpusSurface = (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0);
-      if (korpusMaterial && korpusSurface > 0) {
-        summary[korpusMaterial] = (summary[korpusMaterial] || 0) + korpusSurface;
-      }
-      
-      const frontMaterial = szafka.plytyFront;
-      const frontSurface = szafka.powierzchniaFront || 0;
-      if (frontMaterial && frontMaterial !== '-- BRAK FRONTU --' && frontMaterial !== '<< JAK PŁYTA KORPUS' && frontSurface > 0) {
-        summary[frontMaterial] = (summary[frontMaterial] || 0) + frontSurface;
-      } else if (frontMaterial === '<< JAK PŁYTA KORPUS' && korpusMaterial && frontSurface > 0) {
-        summary[korpusMaterial] = (summary[korpusMaterial] || 0) + frontSurface;
-      }
-      
-      return summary;
+        const korpusMaterial = szafka.plytyKorpus;
+        const korpusSurface = (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0);
+        if (korpusMaterial && korpusSurface > 0) {
+            summary[korpusMaterial] = (summary[korpusMaterial] || 0) + korpusSurface;
+        }
+        const frontMaterial = szafka.plytyFront;
+        const frontSurface = szafka.powierzchniaFront || 0;
+        if (frontMaterial && frontMaterial !== '-- BRAK FRONTU --' && frontMaterial !== '<< JAK PŁYTA KORPUS' && frontSurface > 0) {
+            summary[frontMaterial] = (summary[frontMaterial] || 0) + frontSurface;
+        } else if (frontMaterial === '<< JAK PŁYTA KORPUS' && korpusMaterial && frontSurface > 0) {
+            summary[korpusMaterial] = (summary[korpusMaterial] || 0) + frontSurface;
+        }
+        return summary;
     }, {});
 
-    // Metryki dla podsumowania w ofercie
     const summaryMetrics = {
-      iloscSzafek: szafki.length,
-      powierzchniaKorpusyPolki: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0), 0),
-      powierzchniaFronty: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaFront || 0), 0),
-      iloscBlatowProduktow: blaty.reduce((sum, b) => {
-        const itemInfo = blatyOptions.find(opt => opt.nazwa === b.rodzaj);
-        if (itemInfo && itemInfo.typ === 'produkt') {
-          return sum + (parseFloat(b.ilość) || 0);
-        }
-        return sum;
-      }, 0)
+        iloscSzafek: szafki.length,
+        powierzchniaKorpusyPolki: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0), 0),
+        powierzchniaFronty: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaFront || 0), 0),
+        iloscBlatowProduktow: blaty.reduce((sum, b) => {
+            const itemInfo = blatyOptions.find(opt => opt.nazwa === b.rodzaj);
+            if (itemInfo && itemInfo.typ === 'produkt') { return sum + (parseFloat(b.ilość) || 0); }
+            return sum;
+        }, 0)
     };
 
     return {
-      companyData: {
-        name: settings.companyName, address: settings.companyAddress, city: settings.companyCity, nip: settings.companyNip,
-        website: settings.companyWebsite, email: settings.companyEmail, phone: settings.companyPhone, logo: settings.logo,
-        backgroundImage: settings.backgroundImage, warranty: settings.gwarancja, deliveryTime: settings.czasRealizacji,
-        terms: (settings.warunki || []).map(item => item.text),
-        exclusions: (settings.wykluczenia || []).map(item => item.text),
-      },
-      clientData: projectData || {},
-      totals: totals,
-      summaryMetrics: summaryMetrics,
-      szafkiMaterialSummary: szafkiMaterialSummary,
-      activeSections: Object.entries(calculations).map(([key, data]) => {
-        if (!Array.isArray(data) || data.length === 0) return null;
-        const total = data.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
-        if (total <= 0) return null;
-        return {
-          key,
-          name: key.charAt(0).toUpperCase() + key.slice(1),
-          data,
-          items: data.reduce((sum, item) => sum + (parseInt(item.ilość) || 1), 0),
-          total,
-        };
-      }).filter(Boolean),
+        companyData: { name: settings.companyName, address: settings.companyAddress, city: settings.companyCity, nip: settings.companyNip, website: settings.companyWebsite, email: settings.companyEmail, phone: settings.companyPhone, logo: settings.logo, backgroundImage: settings.backgroundImage, warranty: settings.gwarancja, deliveryTime: settings.czasRealizacji, terms: (settings.warunki || []).map(item => item.text), exclusions: (settings.wykluczenia || []).map(item => item.text), },
+        clientData: projectData || {},
+        totals: totals,
+        summaryMetrics: summaryMetrics,
+        szafkiMaterialSummary: szafkiMaterialSummary,
+        activeSections: Object.entries(calculations).map(([key, data]) => { if (!Array.isArray(data) || data.length === 0) return null; const total = data.reduce((sum, item) => sum + (item.cenaCałość || 0), 0); if (total <= 0) return null; return { key, name: key.charAt(0).toUpperCase() + key.slice(1), data, items: data.reduce((sum, item) => sum + (parseInt(item.ilość) || 1), 0), total, }; }).filter(Boolean),
     };
   };
 
@@ -115,7 +90,7 @@ const SummaryDashboard = () => {
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-4">📋 Podsumowanie sekcji</h3>
           <div className="space-y-3">
-            {Object.entries(totals.sectionTotals || {}).map(([key, value]) => {
+            {(Object.entries(totals.sectionTotals || {})).map(([key, value]) => {
               if (value > 0) {
                 return (
                   <div key={key} className="flex justify-between items-center py-2 border-b border-gray-100">

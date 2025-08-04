@@ -23,8 +23,7 @@ const CalculationSection = () => {
   const handleRemoveItem = (itemType, id) => updateSettings({ [itemType]: (settings[itemType] || []).filter(item => item.id !== id) });
 
   return (
-    <div className="space-y-6">
-      {/* --- PODSUMOWANIE FINANSOWE I PRODUKCYJNE --- */}
+    <div className="space-y-6 p-4 md:p-6">
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-sm border p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">💰 Podsumowanie finansowe</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -35,7 +34,6 @@ const CalculationSection = () => {
         </div>
         
         <div className="mt-6 bg-white/70 backdrop-blur-sm rounded-lg p-6 border">
-            {/* Poprawiony Breakdown */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
                 <div>
                     <BreakdownRow label="Materiały bazowe:" value={formatPrice(totals.materialsTotal)} />
@@ -57,10 +55,10 @@ const CalculationSection = () => {
             <div className="flex justify-end text-blue-700 font-bold text-xl pt-2 mt-2 border-t-2">
                 <div className='text-right'>
                   <span>BRUTTO: {formatPrice(totals.grossTotal)}</span>
+                  {settings.showVAT && <div className='text-xs text-gray-500 font-normal'>zawiera {formatPrice(totals.vatAmount)} VAT</div>}
                 </div>
             </div>
 
-            {/* ✅ ZMIANA: Użyte Materiały w osobnym boksie, ale na tym samym tle */}
             <div className='mt-6 bg-slate-50 rounded-lg p-4'>
                 <h3 className="text-base font-bold text-gray-800 mb-4">Użyte materiały (podsumowanie)</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 text-sm font-medium">
@@ -77,7 +75,6 @@ const CalculationSection = () => {
         </div>
       </div>
       
-      {/* --- DOLICZONE I DODATKOWE POZYCJE --- */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3"><Plus className="text-blue-600" />Doliczone i Dodatkowe pozycje</h3>
         <div className='p-4 bg-gray-50 rounded-lg mb-4'>
@@ -101,14 +98,13 @@ const CalculationSection = () => {
             <h4 className='font-semibold mb-3'>Pozycje ręczne (usługi, montaż)</h4>
             <div className="space-y-3">
               {(settings.serviceItems || []).map(item => <EditableListItem key={item.id} item={item} type="serviceItems" onChange={handleItemChange} onRemove={handleRemoveItem} hasQuantity /> )}
+              <button onClick={() => handleAddItem('serviceItems', { name: 'Nowa usługa', pricePerUnit: 0, quantity: 1, unit: 'szt', active: true })} className="w-full py-2 border-2 border-dashed rounded-lg text-gray-600 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Plus className="w-4 h-4" />Dodaj usługę</button>
             </div>
         </div>
       </div>
 
-      {/* --- POZOSTAŁE USTAWIENIA (NOWY, ZWARTY UKŁAD) --- */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
-            {/* Kolumna lewa */}
             <div className='space-y-6'>
                 <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3"><AlertTriangle className="text-orange-600" />Odpady</h3>
@@ -127,7 +123,6 @@ const CalculationSection = () => {
                     )}
                 </div>
             </div>
-            {/* Kolumna prawa */}
             <div className='space-y-6'>
                 <div>
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-3"><TrendingUp className="text-purple-600"/>Marża i podatki</h3>
@@ -156,8 +151,6 @@ const CalculationSection = () => {
     </div>
   );
 };
-
-// --- Komponenty pomocnicze ---
 const EditableListItem = ({ item, type, onChange, onRemove, hasQuantity }) => (
     <div className="grid grid-cols-12 gap-2 items-end p-2 bg-white border rounded-lg">
         <div className="col-span-1 flex justify-center"><input type="checkbox" checked={item.active} onChange={e => onChange(type, item.id, 'active', e.target.checked)} className="w-5 h-5" /></div>

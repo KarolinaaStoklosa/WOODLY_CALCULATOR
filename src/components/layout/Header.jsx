@@ -1,7 +1,38 @@
-import React from 'react';
-import { Menu, Sun, Moon, Settings, User, Search, Package } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // 1. Importujemy hook do autentykacji
+import { Menu, Sun, Moon, Settings, User, Search, Package, LogOut } from 'lucide-react';
 
 const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
+  // 2. Pobieramy dane o użytkowniku i funkcję wylogowania z kontekstu
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // 3. Dodajemy stan do zarządzania menu podręcznym użytkownika
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login'); // Przekieruj na stronę logowania po wylogowaniu
+    } catch (error) {
+      console.error("Błąd podczas wylogowywania", error);
+    }
+  };
+
+  // Efekt do zamykania menu po kliknięciu poza nim
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownRef]);
+
+
   return (
     <header className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/90 backdrop-blur-lg dark:border-gray-800 dark:bg-gray-900/90">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -23,7 +54,7 @@ const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
                 <Package className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-50">MebelCalc Pro</h1>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-50">Woodly Craft Pro</h1>
               <p className="hidden text-xs text-gray-500 sm:block dark:text-gray-400">Kalkulator wycen</p>
             </div>
           </div>
@@ -60,17 +91,47 @@ const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
             <span className="sr-only">Zmień motyw</span>
           </button>
           
-          <button
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="sr-only">Ustawienia</span>
-          </button>
-
-          <button className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50">
-            <User className="h-5 w-5" />
-            <span className="sr-only">Konto</span>
-          </button>
+         <div className="relative" ref={dropdownRef}>
+            {currentUser ? (
+              // WIDOK DLA ZALOGOWANEGO UŻYTKOWNIKA
+              <div>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50"
+                >
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Konto</span>
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700">
+                    <div className="py-1">
+                      <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200">
+                        <p className="font-semibold">Zalogowano jako</p>
+                        <p className="truncate">{currentUser.email}</p>
+                      </div>
+                      <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Wyloguj się</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // WIDOK DLA GOŚCIA
+              <button
+                onClick={() => navigate('/login')}
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50"
+              >
+                <User className="h-5 w-5" />
+                <span className="sr-only">Zaloguj się</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>

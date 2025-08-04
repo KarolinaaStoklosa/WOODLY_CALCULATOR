@@ -1,8 +1,15 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProjectProvider, useProject } from './context/ProjectContext';
+import { AuthProvider } from './context/AuthContext'; 
 import Layout from './components/layout/Layout';
 
-// Import sekcji
+// Import stron i komponentów
+import LoginPage from './components/pages/LoginPage';
+import SignupPage from './components/pages/SignupPage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
+// Import wszystkich sekcji kalkulatora
 import KorpusyTable from './components/sections/KorpusyTable';
 import SzufladyTable from './components/sections/SzufladyTable';
 import WidocznyBokTable from './components/sections/WidocznyBokTable';
@@ -17,174 +24,104 @@ import ProjectSetupForm from './components/sections/ProjectSetupForm';
 import CalculationSection from './components/sections/CalculationSection';
 import CompanySettings from './components/sections/CompanySettings';
 
-function App() {
-  // 📋 SEKCJE KALKULATORA
+// ✅ NOWOŚĆ: Komponent-wrapper dla całej aplikacji po zalogowaniu.
+// Zawiera całą Twoją oryginalną logikę z pliku App.jsx.
+const MainCalculatorApp = () => {
+  const { projectData } = useProject();
+
   const sections = {
-    companySettings: {
-      title: '🏢 Dane Firmy',
-      component: CompanySettings, 
-      icon: '🏢'
-    },
-    projectSetup: {
-      title: '📂 Dane projektu',
-      component: ProjectSetupForm, 
-      icon: '📂'
-    },
-    calculation: {
-      title: '🧮 Kalkulacja Główna',
-      component: KorpusyTable, // lub główny dashboard
-      icon: '🧮'
-    },
-    szafki: {
-      title: '📦 Szafki/Korpusy',
-      component: KorpusyTable,
-      icon: '📦'
-    },
-    szuflady: {
-      title: '🗂️ Szuflady', 
-      component: SzufladyTable,
-      icon: '🗂️'
-    },
-    widocznyBok: {
-      title: '👁️ Widoczny Bok',
-      component: WidocznyBokTable, 
-      icon: '👁️'
-    },
-    drzwiPrzesuwne: {
-      title: '🚪 Drzwi Przesuwne',
-      component: DrzwiPrzesuwneTable,
-      icon: '🚪'
-    },
-    uchwyty: {
-      title: '🔧 Uchwyty',
-      component: UchwytyTable,
-      icon: '🔧'
-    },
-    zawiasy: {
-      title: '🔗 Zawiasy',
-      component: ZawiasyTable,
-      icon: '🔗'
-    },
-    podnosniki: {
-      title: '⬆️ Podnośniki',
-      component: PodnosnikiTable,
-      icon: '⬆️'
-    },
-    blaty: {
-      title: '🏔️ Blaty',
-      component: BlatyTable,
-      icon: '🏔️'
-    },
-    akcesoria: {
-      title: '🛠️ Akcesoria',
-      component: AkcesoriaTable, 
-      icon: '🛠️'
-    },
-    kalkulacja: {
-      title: '💰 Pozostałe koszty',
-      component: CalculationSection, 
-      icon: '💰'
-    },
-    podsumowanie: {
-      title: '📊 Podsumowanie',
-      component: SummaryDashboard,
-      icon: '📊'
-    },
-    // DODATKOWE SEKCJE Z NAWIGACJI
-    offers: {
-      title: '📄 Oferty',
-      component: () => <div className="p-6">Sekcja Oferty - do zaimplementowania</div>,
-      icon: '📄'
-    },
-    archive: {
-      title: '📦 Archiwum',
-      component: () => <div className="p-6">Sekcja Archiwum - do zaimplementowania</div>,
-      icon: '📦'
-    },
-    analytics: {
-      title: '📊 Analityka',
-      component: () => <div className="p-6">Sekcja Analityka - do zaimplementowania</div>,
-      icon: '📊'
-    },
-    settings: {
-      title: '⚙️ Ustawienia',
-      component: () => <div className="p-6">Sekcja Ustawienia - do zaimplementowania</div>,
-      icon: '⚙️'
-    }
+    companySettings: { title: '🏢 Dane Firmy', component: CompanySettings },
+    projectSetup: { title: '📂 Dane projektu', component: ProjectSetupForm },
+    szafki: { title: '📦 Szafki/Korpusy', component: KorpusyTable },
+    szuflady: { title: '🗂️ Szuflady', component: SzufladyTable },
+    widocznyBok: { title: '👁️ Widoczny Bok', component: WidocznyBokTable },
+    drzwiPrzesuwne: { title: '🚪 Drzwi Przesuwne', component: DrzwiPrzesuwneTable },
+    uchwyty: { title: '🔧 Uchwyty', component: UchwytyTable },
+    zawiasy: { title: '🔗 Zawiasy', component: ZawiasyTable },
+    podnosniki: { title: '⬆️ Podnośniki', component: PodnosnikiTable },
+    blaty: { title: '🏔️ Blaty', component: BlatyTable },
+    akcesoria: { title: '🛠️ Akcesoria', component: AkcesoriaTable },
+    kalkulacja: { title: '💰 Pozostałe koszty', component: CalculationSection },
+    podsumowanie: { title: '📊 Podsumowanie', component: SummaryDashboard },
   };
 
   return (
-    <ProjectProvider>
-      <Layout>
+    <Layout>
+      {({ activeTab, setActiveTab }) => {
+        // Inteligentne przekierowanie po zalogowaniu:
+        // Jeśli nie ma danych projektu (nowy użytkownik), wymuś start od `projectSetup`.
+        const currentTab = projectData ? activeTab : 'projectSetup';
         
-        {({ activeTab, setActiveTab }) => {
-        
-          // BEZPIECZNE wybieranie komponentu
-          const activeSection = sections[activeTab] || sections.szafki || {
-            title: '📦 Szafki/Korpusy',
-            component: () => <div className="p-6">Nieznana sekcja</div>,
-            icon: '📦'
-          };
-          
-          const ActiveComponent = activeSection.component;
+        const activeSection = sections[currentTab] || sections.szafki;
+        const ActiveComponent = activeSection.component;
 
-          return (
-            <>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                {/* Specjalna obsługa dla ProjectSetupForm */}
-                {activeTab === 'projectSetup' ? (
-                  <ProjectSetupForm 
-                    onComplete={(formData) => {
-                      console.log('Dane projektu:', formData);
-                      setActiveTab('szafki');
-                    }}
-                    setActiveTab={setActiveTab}
-                  />
-                ) : (
-                  <ActiveComponent />
-                )}
-              </div>
-
-              {/* Footer z statusem projektu - tylko dla sekcji kalkulatora */}
-              {['szafki', 'szuflady', 'widocznyBok', 'drzwiPrzesuwne', 'uchwyty', 'zawiasy', 'podnosniki', 'blaty', 'akcesoria', 'podsumowanie'].includes(activeTab) && (
-                <ProjectStatusFooter />
+        return (
+          <>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              {currentTab === 'projectSetup' ? (
+                <ProjectSetupForm 
+                  onComplete={() => {
+                    // Po uzupełnieniu danych, przejdź automatycznie do szafek
+                    setActiveTab('szafki'); 
+                  }}
+                />
+              ) : (
+                <ActiveComponent />
               )}
-            </>
-          );
-        }}
-      </Layout>
-    </ProjectProvider>
+            </div>
+            {projectData && <ProjectStatusFooter />}
+          </>
+        );
+      }}
+    </Layout>
+  );
+};
+
+// Główny komponent App, który teraz zarządza tylko routingiem i providerami
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <ProjectProvider>
+          <Routes>
+            {/* Ścieżki publiczne, dostępne dla każdego */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+
+            {/* Główna, chroniona ścieżka aplikacji */}
+            <Route 
+              path="/*" // Używamy "/*", aby obsłużyć wszystkie ścieżki wewnątrz aplikacji (np. /szafki)
+              element={
+                <ProtectedRoute>
+                  <MainCalculatorApp />
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </ProjectProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
-// 📊 PROJECT STATUS FOOTER - NAPRAWIONY
 const ProjectStatusFooter = () => {
-  const { projectData, calculations, calculateGrandTotal } = useProject();
+  const { projectData, totals } = useProject();
+  const projectName = projectData?.projectName || 'Nowy Projekt';
 
-  // 💰 Obliczamy wartość całkowitą
-  const grandTotal = calculateGrandTotal ? calculateGrandTotal() : 0;
-
-  // 📊 Bezpieczne pobieranie nazwy projektu
-  const projectName = projectData?.name || 'Nowy Projekt';
+  // Upewniamy się, że totals nie jest null/undefined
+  const grossTotal = totals?.grossTotal || 0;
 
   return (
     <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-6">
-          <span className="text-gray-600 dark:text-gray-400">
-            📂 Projekt: <span className="font-medium text-gray-900 dark:text-gray-50">
-              {projectName}
-            </span>
+        <span className="text-gray-600 dark:text-gray-400">
+          📂 Projekt: <span className="font-medium text-gray-900 dark:text-gray-50">{projectName}</span>
+        </span>
+        <span className="text-gray-600 dark:text-gray-400">
+          💰 Wartość: <span className="font-mono font-bold text-green-600">
+            {grossTotal.toFixed(2)} zł
           </span>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <span className="text-gray-600 dark:text-gray-400">
-            💰 Wartość: <span className="font-mono font-bold text-green-600">
-              {grandTotal.toFixed(2)} zł
-            </span>
-          </span>
-        </div>
+        </span>
       </div>
     </div>
   );
