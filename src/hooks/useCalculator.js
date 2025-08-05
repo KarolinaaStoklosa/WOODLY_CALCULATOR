@@ -2,23 +2,23 @@
 // Hook zawiera wszystkie funkcje do obliczeń dla różnych sekcji MebelCalc Pro
 
 import { useMemo } from 'react';
-import { getItemPrice, getItemByName, getDropdownOptions } from '../data/dropdowns';
+import { useMaterials } from '../context/MaterialContext'; 
+
 
 export const useCalculator = () => {
 
-  // 🔢 FUNKCJE POMOCNICZE
-  const parseNum = (value) => {
-    const parsed = parseFloat(value);
-    return isNaN(parsed) ? 0 : parsed;
+  const { materials } = useMaterials(); 
+
+  const getItemPrice = (category, name) => {
+    if (!materials || !materials[category]) return 0;
+    const item = materials[category].find(i => i.nazwa === name);
+    return item ? item.cena : 0;
   };
 
-  const formatPrice = (price) => {
-    return typeof price === 'number' ? price.toFixed(2) : '0.00';
-  };
+  const parseNum = (value) => parseFloat(value) || 0;
+  const formatPrice = (price) => (typeof price === 'number' ? price.toFixed(2) : '0.00');
+  const formatSurface = (surface) => (typeof surface === 'number' ? surface.toFixed(4) : '0.0000');
 
-  const formatSurface = (surface) => {
-    return typeof surface === 'number' ? surface.toFixed(4) : '0.0000';
-  };
 
   // 📦 KALKULACJA KORPUSÓW/SZAFEK
   const calculateKorpus = (korpus) => {
@@ -369,7 +369,7 @@ export const useCalculator = () => {
     // Stałe
     VAT_RATE: 0.23,
     MARGIN_RATE: 0.30
-  }), []);
+  }), [materials]);
 };
 
 export default useCalculator;

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Layers, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const WidocznyBokTable = () => {
   const { items: widoczneBoki, addItem, updateItem, removeItem, total } = useProjectSection('widocznyBok');
   const { calculateWidocznyBok, formatPrice, formatSurface } = useCalculator();
-  const frontyOptions = getDropdownOptions('fronty');
+  const { materials } = useMaterials();
+  const frontyOptions = materials.fronty || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddWidocznyBok = () => {

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Move, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const DrzwiPrzesuwneTable = () => {
   const { items: drzwiPrzesuwne, addItem, updateItem, removeItem, total } = useProjectSection('drzwiPrzesuwne');
   const { calculateDrzwiPrzesuwne, formatPrice } = useCalculator();
-  const drzwiOptions = getDropdownOptions('drzwiPrzesuwne');
+  const { materials } = useMaterials();
+  const drzwiOptions = materials.drzwiPrzesuwne || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddDrzwi = () => {

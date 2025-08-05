@@ -3,6 +3,8 @@ import { db } from '../firebase/config';
 import { doc, setDoc, onSnapshot, serverTimestamp, collection, addDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { useCalculator } from '../hooks/useCalculator';
+import { useMaterials } from './MaterialContext'; // 1. Importujemy hook do materiałów
+
 
 const ProjectContext = createContext();
 
@@ -38,13 +40,14 @@ const defaultSettings = {
 
 export const ProjectProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const { calculateProjectTotal } = useCalculator();
+  const { materials } = useMaterials();
+  const { calculateProjectTotal } = useCalculator(materials);
 
   const [projectData, setProjectData] = useState(null);
   const [calculations, setCalculations] = useState(defaultCalculations);
   const [settings, setSettings] = useState(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeProjectId, setActiveProjectId] = useState(null); 
+  const [activeProjectId, setActiveProjectId] = useState(null);
   const [totals, setTotals] = useState({
     materialsTotal: 0, additionalTotal: 0, subtotal: 0, marginAmount: 0, netTotal: 0,
     vatAmount: 0, grossTotal: 0, wasteDetails: {}, hdfCost: 0, transportCost: 0,

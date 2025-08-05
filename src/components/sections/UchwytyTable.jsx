@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Grip, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const UchwytyTable = () => {
   const { items: uchwyty, addItem, updateItem, removeItem, total } = useProjectSection('uchwyty');
   const { calculateUchwyt, formatPrice } = useCalculator();
-  const uchwytyOptions = getDropdownOptions('uchwyty');
+  const { materials } = useMaterials();
+  const uchwytyOptions = materials.uchwyty || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddUchwyt = () => {

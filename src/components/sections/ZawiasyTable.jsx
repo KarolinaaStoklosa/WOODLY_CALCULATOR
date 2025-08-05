@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, RotateCcw, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
-import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const ZawiasyTable = () => {
   const { items: zawiasy, addItem, updateItem, removeItem, total } = useProjectSection('zawiasy');
   const { calculateZawias, formatPrice } = useCalculator();
-  const zawiasyOptions = getDropdownOptions('zawiasy');
+  const { materials } = useMaterials();
+  const zawiasyOptions = materials.zawiasy || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddZawias = () => {

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProjectProvider, useProject } from './context/ProjectContext';
 import { AuthProvider } from './context/AuthContext'; 
+import { MaterialsProvider } from './context/MaterialContext'; // Importujemy MaterialsProvider
 import Layout from './components/layout/Layout';
 
 // Import stron i komponentów
@@ -27,6 +28,7 @@ import ProjectSetupForm from './components/sections/ProjectSetupForm';
 import CalculationSection from './components/sections/CalculationSection';
 import CompanySettings from './components/sections/CompanySettings';
 import ArchivePage from './components/sections/ArchivePage';
+import MaterialsManager from './components/sections/MaterialsManager';
 
 const MainCalculatorApp = () => {
   const { projectData } = useProject();
@@ -46,6 +48,7 @@ const MainCalculatorApp = () => {
     kalkulacja: { title: '💰 Pozostałe koszty', component: CalculationSection },
     podsumowanie: { title: '📊 Podsumowanie', component: SummaryDashboard },
     archive: { title: '📦 Archiwum', component: ArchivePage },
+    materials: { title: '📚 Zarządzaj Materiałami', component: MaterialsManager },
   };
 
   return (
@@ -78,19 +81,19 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <ProjectProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            
-            {/* ✅ ZMIANA: Każda strona jest teraz chroniona indywidualnie */}
-            <Route path="/subscribe" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-            <Route path="/success" element={<ProtectedRoute><SuccessPage /></ProtectedRoute>} />
-            <Route path="/cancel" element={<ProtectedRoute><CancelPage /></ProtectedRoute>} />
-            
-            <Route path="/*" element={<ProtectedRoute><MainCalculatorApp /></ProtectedRoute>} />
-          </Routes>
-        </ProjectProvider>
+        {/* ✅ ZMIANA: Poprawna kolejność. MaterialsProvider musi być na zewnątrz ProjectProvider. */}
+        <MaterialsProvider>
+          <ProjectProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/subscribe" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+              <Route path="/success" element={<ProtectedRoute><SuccessPage /></ProtectedRoute>} />
+              <Route path="/cancel" element={<ProtectedRoute><CancelPage /></ProtectedRoute>} />
+              <Route path="/*" element={<ProtectedRoute><MainCalculatorApp /></ProtectedRoute>} />
+            </Routes>
+          </ProjectProvider>
+        </MaterialsProvider>
       </AuthProvider>
     </Router>
   );

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Wrench, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const AkcesoriaTable = () => {
   const { items: akcesoria, addItem, updateItem, removeItem, total } = useProjectSection('akcesoria');
   const { calculateAkcesorium, formatPrice } = useCalculator();
-  const akcesoriaOptions = getDropdownOptions('akcesoria');
+  const { materials } = useMaterials();
+  const akcesoriaOptions = materials.akcesoria || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddAkcesorium = () => {

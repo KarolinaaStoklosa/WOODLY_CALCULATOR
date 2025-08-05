@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Square, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const BlatyTable = () => {
   const { items: blaty, addItem, updateItem, removeItem, total } = useProjectSection('blaty');
   const { calculateBlat, formatPrice } = useCalculator();
-  const blatyOptions = getDropdownOptions('blaty');
+  const { materials } = useMaterials();
+  const blatyOptions = materials.blaty || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddBlat = () => {

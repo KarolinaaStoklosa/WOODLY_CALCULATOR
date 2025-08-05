@@ -16,14 +16,16 @@ import {
 } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext'; // 1. Importujemy nowy hook
+
 
 const KorpusyTable = () => {
   const { items: korpusy, addItem, updateItem, removeItem, total } = useProjectSection('szafki');
   const { calculateKorpus, formatPrice, formatSurface } = useCalculator();
-  const plytyKorpusOptions = getDropdownOptions('plytyMeblowe');
-  const plytyFrontOptions = getDropdownOptions('fronty');
-  const okleinaOptions = getDropdownOptions('okleina');
+  const { materials } = useMaterials();
+  const plytyKorpusOptions = materials.plytyMeblowe || [];
+  const plytyFrontOptions = materials.fronty || [];
+  const okleinaOptions = materials.okleina || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
 
@@ -75,6 +77,7 @@ const KorpusyTable = () => {
   const totalCenaKorpusyPolki = korpusy.reduce((sum, k) => sum + (k.cenaKorpus || 0) + (k.cenaPółki || 0), 0);
   const totalCenaFronty = korpusy.reduce((sum, k) => sum + (k.cenaFront || 0), 0);
   const totalSurface = totalPowierzchniaKorpusyPolki + totalPowierzchniaFronty;
+
 
    return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
@@ -457,12 +460,15 @@ const KorpusCard = ({
             </div>
           </div>
 
-          {/* Advanced Calculations */}
           {showAdvanced && (
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h4 className="font-semibold text-gray-900 mb-4">📊 Szczegółowe kalkulacje</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                
+                {/* ✅ ZMIANA: Ujednolicony wygląd dla karty "Korpus" */}
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-2xl mb-1">📦</div>
+                  <div className="font-semibold text-blue-600">{formatSurface(korpus.powierzchniaKorpus)} m²</div>
                   <div className="text-gray-600">Korpus</div>
                   <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaKorpus)} zł</div>
                 </div>
@@ -483,10 +489,11 @@ const KorpusCard = ({
                 
                 <div className="text-center p-3 bg-orange-50 rounded-lg">
                   <div className="text-2xl mb-1">🔗</div>
-                  <div className="font-semibold text-orange-600">{formatSurface(korpus.okleinaMetry)} m</div>
+                  <div className="font-semibold text-orange-600">{formatSurface(korpus.okleinaMetry, 2)} m</div>
                   <div className="text-gray-600">Okleina</div>
                   <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaOkleina)} zł</div>
                 </div>
+
               </div>
             </div>
           )}

@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Package2, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { getDropdownOptions } from '../../data/dropdowns';
+import { useMaterials } from '../../context/MaterialContext';
 
 const SzufladyTable = () => {
   const { items: szuflady, addItem, updateItem, removeItem, total } = useProjectSection('szuflady');
   const { calculateSzuflada, formatPrice } = useCalculator();
-  const szufladyOptions = getDropdownOptions('szuflady');
+  const { materials } = useMaterials();
+  const szufladyOptions = materials.szuflady || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleAddSzuflada = () => {
