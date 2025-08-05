@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getAuth, 
@@ -9,7 +8,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import app from '../firebase/config'; // Importujemy naszą skonfigurowaną aplikację
+import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore'; // Dodajemy `setDoc`
+import app from '../firebase/config';
 
 const AuthContext = createContext();
 
@@ -19,52 +19,71 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Ważne: stan ładowania do sprawdzania sesji
+  const [loading, setLoading] = useState(true);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   const auth = getAuth(app);
+  const db = getFirestore(app);
 
-  // Funkcja do rejestracji nowego użytkownika
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
-  };
+  // ✅ ZMIANA: Rozbudowujemy funkcję `signup`
+  const signup = async (email, password) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-  // Funkcja do logowania za pomocą emaila i hasła
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
-
-  // Funkcja do logowania za pomocą Google
-  const loginWithGoogle = () => {
-    const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
-  };
-
-  // Funkcja do wylogowywania
-  const logout = () => {
-    return signOut(auth);
-  };
-
-  // Ten efekt to serce naszego systemu.
-  // Firebase sam informuje nas o zmianie stanu zalogowania (nawet po odświeżeniu strony).
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setCurrentUser(user);
-      setLoading(false); // Kończymy ładowanie, gdy już wiemy czy jest użytkownik
+    // Po utworzeniu użytkownika, natychmiast stwórz dla niego dokument w Firestore
+    const userRef = doc(db, 'users', user.uid);
+    await setDoc(userRef, {
+      email: user.email,
+      createdAt: new Date(),
+      subscription: {
+        status: 'inactive' // Ustaw domyślny status
+      }
     });
 
-    return unsubscribe; // Czysta funkcja, która "odsubskrybuje" nas od słuchania
-  }, []);
+    return userCredential;
+  };
+
+  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
+  const loginWithGoogle = () => { 
+      const provider = new GoogleAuthProvider();
+      return signInWithPopup(auth, provider);
+  };
+  const logout = () => signOut(auth);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, user => {
+      setCurrentUser(user);
+      
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists() && docSnap.data().subscription) {
+            setSubscriptionStatus(docSnap.data().subscription.status);
+          } else {
+            setSubscriptionStatus('inactive');
+          }
+          setLoading(false);
+        });
+        return () => unsubscribeProfile();
+      } else {
+        setSubscriptionStatus(null);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, [auth, db]);
 
   const value = {
     currentUser,
     loading,
-    signup,
+    subscriptionStatus,
+    signup, // Udostępniamy nową, asynchroniczną funkcję
     login,
     loginWithGoogle,
     logout
   };
 
-  // Nie renderujemy aplikacji, dopóki Firebase nie sprawdzi stanu logowania
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}

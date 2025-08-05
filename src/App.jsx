@@ -7,6 +7,9 @@ import Layout from './components/layout/Layout';
 // Import stron i komponentów
 import LoginPage from './components/pages/LoginPage';
 import SignupPage from './components/pages/SignupPage';
+import SubscriptionPage from './components/pages/SubscriptionPage';
+import SuccessPage from './components/pages/SuccessPage';
+import CancelPage from './components/pages/CancelPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Import wszystkich sekcji kalkulatora
@@ -25,8 +28,7 @@ import CalculationSection from './components/sections/CalculationSection';
 import CompanySettings from './components/sections/CompanySettings';
 import ArchivePage from './components/sections/ArchivePage';
 
-// Komponent-wrapper dla całej aplikacji po zalogowaniu
-const MainApp = () => {
+const MainCalculatorApp = () => {
   const { projectData } = useProject();
 
   const sections = {
@@ -56,11 +58,8 @@ const MainApp = () => {
         return (
           <>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              {/* Specjalna obsługa dla formularzy wymagających dodatkowych propsów */}
               {currentTab === 'projectSetup' ? (
-                <ProjectSetupForm 
-                  onComplete={() => setActiveTab('szafki')}
-                />
+                <ProjectSetupForm onComplete={() => setActiveTab('szafki')} />
               ) : currentTab === 'archive' ? (
                 <ArchivePage setActiveTab={setActiveTab} />
               ) : (
@@ -75,7 +74,6 @@ const MainApp = () => {
   );
 };
 
-// Główny komponent App, który zarządza routingiem
 function App() {
   return (
     <Router>
@@ -84,14 +82,13 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route 
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <MainApp />
-                </ProtectedRoute>
-              } 
-            />
+            
+            {/* ✅ ZMIANA: Każda strona jest teraz chroniona indywidualnie */}
+            <Route path="/subscribe" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+            <Route path="/success" element={<ProtectedRoute><SuccessPage /></ProtectedRoute>} />
+            <Route path="/cancel" element={<ProtectedRoute><CancelPage /></ProtectedRoute>} />
+            
+            <Route path="/*" element={<ProtectedRoute><MainCalculatorApp /></ProtectedRoute>} />
           </Routes>
         </ProjectProvider>
       </AuthProvider>
