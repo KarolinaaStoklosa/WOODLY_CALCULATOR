@@ -4,7 +4,6 @@ const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
 admin.initializeApp();
 
 exports.createStripeCheckout = onCall({ cors: true }, async (request) => {
@@ -12,26 +11,21 @@ exports.createStripeCheckout = onCall({ cors: true }, async (request) => {
     throw new HttpsError("unauthenticated", "Musisz być zalogowany.");
   }
 
-  const { priceId } = request.data;
-  const YOUR_DOMAIN = "http://localhost:5173"; 
+  const { priceId, mode } = request.data;
+  const YOUR_DOMAIN = "http://localhost:5174"; 
 
   try {
-    logger.info(`Tworzenie sesji dla użytkownika: ${request.auth.uid} z ceną: ${priceId}`);
-    
     const session = await stripe.checkout.sessions.create({
-      // ✅ ZMIANA: Usunęliśmy 'p24' z listy. Pozostaje tylko 'card'.
-      payment_method_types: ["card"], 
-      mode: "subscription",
+      payment_method_types: mode === 'subscription' ? ["card"] : ["card", "p24"],
+      mode: mode,
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: request.auth.uid,
       success_url: `${YOUR_DOMAIN}/success`,
       cancel_url: `${YOUR_DOMAIN}/cancel`,
     });
-
-    logger.info(`Sesja utworzona pomyślnie: ${session.id}`);
     return { id: session.id };
   } catch (error) {
-    logger.error("Błąd podczas tworzenia sesji Stripe:", error);
+    logger.error("Błąd tworzenia sesji Stripe:", error);
     throw new HttpsError("internal", `Wystąpił błąd serwera: ${error.message}`);
   }
 });
@@ -51,18 +45,47 @@ exports.stripeWebhook = onRequest(async (req, res) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const userId = session.client_reference_id;
-    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+
+    if (!userId) {
+      logger.error("Brak userId w sesji Stripe!");
+      return res.status(400).send("Brak userId.");
+    }
 
     const userRef = admin.firestore().collection("users").doc(userId);
-    await userRef.set({
-      subscription: {
-        status: "active",
-        priceId: subscription.items.data[0].price.id,
-        customerId: session.customer,
-        current_period_end: new Date(subscription.current_period_end * 1000),
+
+    try {
+      // ✅ ZMIANA: Logika jest teraz rozdzielona dla obu typów płatności
+      if (session.mode === 'subscription') {
+        const subscription = await stripe.subscriptions.retrieve(session.subscription);
+        await userRef.update({
+          subscription: {
+            status: "active",
+            priceId: subscription.items.data[0].price.id,
+            customerId: session.customer,
+            current_period_end: new Date(subscription.current_period_end * 1000),
+            accessUntil: null // Czyścimy dostęp jednorazowy
+          }
+        });
+        logger.info(`Subskrypcja cykliczna aktywowana dla: ${userId}`);
+
+      } else if (session.mode === 'payment') {
+        const accessEndDate = new Date();
+        accessEndDate.setDate(accessEndDate.getDate() + 30);
+        await userRef.update({
+          subscription: {
+            status: "active",
+            // W trybie 'payment', priceId jest niedostępny w tym evencie,
+            // ale nie jest nam potrzebny do weryfikacji.
+            accessUntil: accessEndDate, // Zapisujemy datę wygaśnięcia dostępu
+            current_period_end: null // Czyścimy dane subskrypcji
+          }
+        });
+        logger.info(`Dostęp jednorazowy aktywowany dla: ${userId} do ${accessEndDate.toISOString()}`);
       }
-    }, { merge: true });
-    logger.info(`Subskrypcja zaktualizowana dla: ${userId}`);
+    } catch (err) {
+      logger.error("Błąd podczas aktualizacji profilu użytkownika:", err);
+      return res.status(500).send("Błąd serwera wewnętrznego.");
+    }
   }
 
   res.status(200).send();

@@ -1,19 +1,15 @@
-import React from 'react';
+import React, { useEffect }  from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProjectProvider, useProject } from './context/ProjectContext';
 import { AuthProvider } from './context/AuthContext'; 
-import { MaterialsProvider } from './context/MaterialContext'; // Importujemy MaterialsProvider
+import { MaterialsProvider } from './context/MaterialContext';
 import Layout from './components/layout/Layout';
-
-// Import stron i komponentów
 import LoginPage from './components/pages/LoginPage';
 import SignupPage from './components/pages/SignupPage';
 import SubscriptionPage from './components/pages/SubscriptionPage';
 import SuccessPage from './components/pages/SuccessPage';
 import CancelPage from './components/pages/CancelPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-
-// Import wszystkich sekcji kalkulatora
 import KorpusyTable from './components/sections/KorpusyTable';
 import SzufladyTable from './components/sections/SzufladyTable';
 import WidocznyBokTable from './components/sections/WidocznyBokTable';
@@ -29,45 +25,83 @@ import CalculationSection from './components/sections/CalculationSection';
 import CompanySettings from './components/sections/CompanySettings';
 import ArchivePage from './components/sections/ArchivePage';
 import MaterialsManager from './components/sections/MaterialsManager';
+import { Sparkles, FilePlus } from 'lucide-react';
+
+// ✅ NOWOŚĆ: Ekran powitalny dla nowych użytkowników
+const WelcomeScreen = ({ setActiveTab }) => (
+  <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-8 text-center flex flex-col items-center justify-center min-h-[calc(100vh-8rem)]">
+    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+        <Sparkles className="w-8 h-8 text-white" />
+      </div>
+    </div>
+    <h1 className="text-4xl font-bold text-gray-900">Witaj w Aplikacji!</h1>
+    <p className="text-gray-600 mt-4 max-w-xl mx-auto">
+      Wygląda na to, że nie masz jeszcze aktywnego projektu. Możesz teraz skonfigurować ustawienia, zarządzać materiałami lub od razu stworzyć nowy projekt, aby rozpocząć kalkulację.
+    </p>
+    <button 
+      onClick={() => setActiveTab('projectSetup')}
+      className="mt-8 flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+    >
+      <FilePlus className="w-5 h-5 mr-2" />
+      Utwórz Pierwszy Projekt
+    </button>
+  </div>
+);
+
 
 const MainCalculatorApp = () => {
   const { projectData } = useProject();
 
+  // ✅ ZMIANA: Dodajemy flagę `isCalculator` do rozróżniania sekcji
   const sections = {
-    companySettings: { title: '🏢 Dane Firmy', component: CompanySettings },
-    projectSetup: { title: '📂 Dane projektu', component: ProjectSetupForm },
-    szafki: { title: '📦 Szafki/Korpusy', component: KorpusyTable },
-    szuflady: { title: '🗂️ Szuflady', component: SzufladyTable },
-    widocznyBok: { title: '👁️ Widoczny Bok', component: WidocznyBokTable },
-    drzwiPrzesuwne: { title: '🚪 Drzwi Przesuwne', component: DrzwiPrzesuwneTable },
-    uchwyty: { title: '🔧 Uchwyty', component: UchwytyTable },
-    zawiasy: { title: '🔗 Zawiasy', component: ZawiasyTable },
-    podnosniki: { title: '⬆️ Podnośniki', component: PodnosnikiTable },
-    blaty: { title: '🏔️ Blaty', component: BlatyTable },
-    akcesoria: { title: '🛠️ Akcesoria', component: AkcesoriaTable },
-    kalkulacja: { title: '💰 Pozostałe koszty', component: CalculationSection },
-    podsumowanie: { title: '📊 Podsumowanie', component: SummaryDashboard },
-    archive: { title: '📦 Archiwum', component: ArchivePage },
-    materials: { title: '📚 Zarządzaj Materiałami', component: MaterialsManager },
+    companySettings: { title: '🏢 Dane Firmy', component: CompanySettings, isCalculator: false },
+    projectSetup: { title: '📂 Dane projektu', component: ProjectSetupForm, isCalculator: false },
+    szafki: { title: '📦 Szafki/Korpusy', component: KorpusyTable, isCalculator: true },
+    szuflady: { title: '🗂️ Szuflady', component: SzufladyTable, isCalculator: true },
+    widocznyBok: { title: '👁️ Widoczny Bok', component: WidocznyBokTable, isCalculator: true },
+    drzwiPrzesuwne: { title: '🚪 Drzwi Przesuwne', component: DrzwiPrzesuwneTable, isCalculator: true },
+    uchwyty: { title: '🔧 Uchwyty', component: UchwytyTable, isCalculator: true },
+    zawiasy: { title: '🔗 Zawiasy', component: ZawiasyTable, isCalculator: true },
+    podnosniki: { title: '⬆️ Podnośniki', component: PodnosnikiTable, isCalculator: true },
+    blaty: { title: '🏔️ Blaty', component: BlatyTable, isCalculator: true },
+    akcesoria: { title: '🛠️ Akcesoria', component: AkcesoriaTable, isCalculator: true },
+    kalkulacja: { title: '💰 Pozostałe koszty', component: CalculationSection, isCalculator: true },
+    podsumowanie: { title: '📊 Podsumowanie', component: SummaryDashboard, isCalculator: true },
+    archive: { title: '📦 Archiwum', component: ArchivePage, isCalculator: false },
+    materials: { title: '📚 Zarządzaj Materiałami', component: MaterialsManager, isCalculator: false },
   };
 
   return (
     <Layout>
       {({ activeTab, setActiveTab }) => {
-        const currentTab = projectData ? activeTab : 'projectSetup';
-        const activeSection = sections[currentTab] || sections.szafki;
-        const ActiveComponent = activeSection.component;
+        
+        // ✅ ZMIANA: Dodajemy useEffect do przewijania strony do góry
+        useEffect(() => {
+          window.scrollTo(0, 0);
+        }, [activeTab]); // Efekt uruchomi się za każdym razem, gdy zmieni się `activeTab`
+
+        const isCalculatorTab = sections[activeTab]?.isCalculator;
+        let componentToRender;
+
+        if (!projectData && isCalculatorTab) {
+          componentToRender = <WelcomeScreen setActiveTab={setActiveTab} />;
+        } else {
+          const ActiveComponent = sections[activeTab]?.component || WelcomeScreen;
+          
+          if (activeTab === 'projectSetup') {
+            componentToRender = <ProjectSetupForm onComplete={() => setActiveTab('szafki')} />;
+          } else if (activeTab === 'archive') {
+            componentToRender = <ArchivePage setActiveTab={setActiveTab} />;
+          } else {
+            componentToRender = <ActiveComponent setActiveTab={setActiveTab} />;
+          }
+        }
 
         return (
           <>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              {currentTab === 'projectSetup' ? (
-                <ProjectSetupForm onComplete={() => setActiveTab('szafki')} />
-              ) : currentTab === 'archive' ? (
-                <ArchivePage setActiveTab={setActiveTab} />
-              ) : (
-                <ActiveComponent />
-              )}
+              {componentToRender}
             </div>
             {projectData && <ProjectStatusFooter />}
           </>
@@ -81,7 +115,6 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        {/* ✅ ZMIANA: Poprawna kolejność. MaterialsProvider musi być na zewnątrz ProjectProvider. */}
         <MaterialsProvider>
           <ProjectProvider>
             <Routes>

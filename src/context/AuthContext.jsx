@@ -8,7 +8,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore'; // Dodajemy `setDoc`
+import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import app from '../firebase/config';
 
 const AuthContext = createContext();
@@ -25,35 +25,41 @@ export const AuthProvider = ({ children }) => {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // ✅ ZMIANA: Rozbudowujemy funkcję `signup`
   const signup = async (email, password) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-
-    // Po utworzeniu użytkownika, natychmiast stwórz dla niego dokument w Firestore
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, {
       email: user.email,
       createdAt: new Date(),
-      subscription: {
-        status: 'inactive' // Ustaw domyślny status
-      }
+      subscription: { status: 'inactive' }
     });
-
     return userCredential;
   };
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
-  const loginWithGoogle = () => { 
-      const provider = new GoogleAuthProvider();
-      return signInWithPopup(auth, provider);
+  
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    const user = userCredential.user;
+    const userRef = doc(db, 'users', user.uid);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) {
+      await setDoc(userRef, {
+        email: user.email,
+        createdAt: new Date(),
+        subscription: { status: 'inactive' }
+      });
+    }
+    return userCredential;
   };
+  
   const logout = () => signOut(auth);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
-      
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
@@ -63,6 +69,9 @@ export const AuthProvider = ({ children }) => {
             setSubscriptionStatus('inactive');
           }
           setLoading(false);
+        }, (error) => {
+          console.error("Błąd nasłuchiwania na profil użytkownika:", error);
+          setLoading(false);
         });
         return () => unsubscribeProfile();
       } else {
@@ -70,18 +79,12 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     });
-
     return () => unsubscribeAuth();
   }, [auth, db]);
 
   const value = {
-    currentUser,
-    loading,
-    subscriptionStatus,
-    signup, // Udostępniamy nową, asynchroniczną funkcję
-    login,
-    loginWithGoogle,
-    logout
+    currentUser, loading, subscriptionStatus,
+    signup, login, loginWithGoogle, logout
   };
 
   return (
