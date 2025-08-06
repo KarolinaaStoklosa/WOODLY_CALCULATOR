@@ -152,8 +152,23 @@ const SummaryDashboard = () => {
 };
 
 const StatCard = ({ title, value, icon: Icon, color }) => {
-  const colorClasses = { blue: 'bg-blue-50 text-blue-700 border-blue-200', amber: 'bg-amber-50 text-amber-700 border-amber-200', green: 'bg-green-50 text-green-700 border-green-200', purple: 'bg-purple-50 text-purple-700 border-purple-200' };
-  return ( <div className={`p-6 rounded-xl border ${colorClasses[color]}`}><div className="flex items-center justify-between mb-3"><Icon className="w-8 h-8" /><div className="text-2xl font-bold">{value}</div></div><div className="font-semibold mb-1">{title}</div></div> );
+  const colorClasses = { 
+    blue: 'bg-blue-50 text-blue-700', 
+    amber: 'bg-amber-50 text-amber-700', 
+    green: 'bg-green-50 text-green-700', 
+    purple: 'bg-purple-50 text-purple-700' 
+  };
+  return (
+    <div className={`p-5 rounded-xl ${colorClasses[color]}`}>
+      <div className="flex items-center gap-2 font-semibold text-sm">
+        <Icon className="w-5 h-5" />
+        <span>{title}</span>
+      </div>
+      <p className="text-2xl font-bold  whitespace-nowrap mt-3">
+        {value}
+      </p>
+    </div>
+  );
 };
 
 const ActionButton = ({ icon: Icon, text, subtext, onClick, color }) => {

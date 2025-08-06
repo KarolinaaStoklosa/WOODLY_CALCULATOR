@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  Calculator, 
-  Eye, 
-  EyeOff, 
-  Sparkles, 
-  TrendingUp,
-  Box,
-  Square,
-  Zap,
-  Info,
-  ChevronDown,
-  ChevronUp
+import {
+  Plus, Trash2, Eye, EyeOff, TrendingUp,
+  Box, Square, Zap, ChevronDown, ChevronUp, Info
 } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
@@ -300,163 +289,70 @@ const KorpusCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="group bg-white/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-      
-      {/* Card Header */}
-      <div className="p-6 border-b border-gray-100">
+    <div className="group bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
               {index + 1}
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Korpus #{index + 1}
-              </h3>
-              <p className="text-sm text-gray-500">
-                {korpus.szerokość}×{korpus.wysokość}×{korpus.głębokość} mm
-              </p>
+              <h3 className="font-semibold text-gray-900">Korpus #{index + 1}</h3>
+              <p className="text-xs text-gray-500">{korpus.szerokość}×{korpus.wysokość}×{korpus.głębokość} mm</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="text-right">
-              <div className="text-2xl font-bold text-green-600">
-                {formatPrice(korpus.cenaCałość)} zł
-              </div>
-              <div className="text-sm text-gray-500">
-                {formatSurface((korpus.powierzchniaKorpus || 0) + (korpus.powierzchniaPółek || 0))} m²
-              </div>
+              <div className="text-lg font-bold text-green-600">{formatPrice(korpus.cenaCałość)} zł</div>
+              <div className="text-xs text-gray-500">{formatSurface((korpus.powierzchniaKorpus || 0) + (korpus.powierzchniaPółek || 0))} m²</div>
             </div>
-            
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
-            >
-              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </button>
-            
-            <button
-              onClick={() => onRemove(korpus.id)}
-              className="w-10 h-10 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <button onClick={() => setIsExpanded(!isExpanded)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">{isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}</button>
+            <button onClick={() => onRemove(korpus.id)} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
-
-      {/* Expandable Content */}
+      
       {isExpanded && (
-        <div className="p-6 space-y-6 bg-gray-50/50">
+        <div className="p-4 space-y-4 bg-gray-50/50">
           
-          {/* Material Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* ✅ ZMIANA: Zmniejszono odstępy i rozmiary inputów */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Płyta Korpus
-              </label>
-              <select
-                value={korpus.plytyKorpus}
-                onChange={(e) => onUpdate(korpus.id, 'plytyKorpus', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                {plytyKorpusOptions.map((option, idx) => (
-                  <option key={idx} value={option.nazwa}>
-                    {option.nazwa}
-                  </option>
-                ))}
+              <label className="block text-xs font-medium text-gray-600 mb-1">Płyta Korpus</label>
+              <select value={korpus.plytyKorpus} onChange={(e) => onUpdate(korpus.id, 'plytyKorpus', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                {plytyKorpusOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Płyta Front
-              </label>
-              <select
-                value={korpus.plytyFront}
-                onChange={(e) => onUpdate(korpus.id, 'plytyFront', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                {plytyFrontOptions.map((option, idx) => (
-                  <option key={idx} value={option.nazwa}>
-                    {option.nazwa}
-                  </option>
-                ))}
+              <label className="block text-xs font-medium text-gray-600 mb-1">Płyta Front</label>
+              <select value={korpus.plytyFront} onChange={(e) => onUpdate(korpus.id, 'plytyFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                {plytyFrontOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Okleina
-              </label>
-              <select
-                value={korpus.okleina}
-                onChange={(e) => onUpdate(korpus.id, 'okleina', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                {okleinaOptions.map((option, idx) => (
-                  <option key={idx} value={option.nazwa}>
-                    {option.nazwa}
-                  </option>
-                ))}
+              <label className="block text-xs font-medium text-gray-600 mb-1">Okleina</label>
+              <select value={korpus.okleina} onChange={(e) => onUpdate(korpus.id, 'okleina', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                {okleinaOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
           </div>
 
-          {/* Dimensions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Szerokość [mm]
-              </label>
-              <input
-                type="number"
-                value={korpus.szerokość}
-                onChange={(e) => onUpdate(korpus.id, 'szerokość', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="600"
-              />
+              <label className="block text-xs font-medium text-gray-600 mb-1">Szer. [mm]</label>
+              <input type="number" value={korpus.szerokość} onChange={(e) => onUpdate(korpus.id, 'szerokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="600" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Wysokość [mm]
-              </label>
-              <input
-                type="number"
-                value={korpus.wysokość}
-                onChange={(e) => onUpdate(korpus.id, 'wysokość', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="720"
-              />
+              <label className="block text-xs font-medium text-gray-600 mb-1">Wys. [mm]</label>
+              <input type="number" value={korpus.wysokość} onChange={(e) => onUpdate(korpus.id, 'wysokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="720" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Głębokość [mm]
-              </label>
-              <input
-                type="number"
-                value={korpus.głębokość}
-                onChange={(e) => onUpdate(korpus.id, 'głębokość', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="350"
-              />
+              <label className="block text-xs font-medium text-gray-600 mb-1">Głęb. [mm]</label>
+              <input type="number" value={korpus.głębokość} onChange={(e) => onUpdate(korpus.id, 'głębokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="350" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ilość półek
-              </label>
-              <input
-                type="number"
-                value={korpus.ilośćPółek}
-                onChange={(e) => onUpdate(korpus.id, 'ilośćPółek', e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="2"
-                min="0"
-              />
+              <label className="block text-xs font-medium text-gray-600 mb-1">Półki [szt]</label>
+              <input type="number" value={korpus.ilośćPółek} onChange={(e) => onUpdate(korpus.id, 'ilośćPółek', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="2" min="0" />
             </div>
           </div>
 
@@ -464,36 +360,30 @@ const KorpusCard = ({
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h4 className="font-semibold text-gray-900 mb-4">📊 Szczegółowe kalkulacje</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                
-                {/* ✅ ZMIANA: Ujednolicony wygląd dla karty "Korpus" */}
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-2xl mb-1">📦</div>
                   <div className="font-semibold text-blue-600">{formatSurface(korpus.powierzchniaKorpus)} m²</div>
                   <div className="text-gray-600">Korpus</div>
                   <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaKorpus)} zł</div>
                 </div>
-                
                 <div className="text-center p-3 bg-green-50 rounded-lg">
                   <div className="text-2xl mb-1">📚</div>
                   <div className="font-semibold text-green-600">{formatSurface(korpus.powierzchniaPółek)} m²</div>
                   <div className="text-gray-600">Półki</div>
                   <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaPółki)} zł</div>
                 </div>
-                
                 <div className="text-center p-3 bg-purple-50 rounded-lg">
                   <div className="text-2xl mb-1">🎨</div>
                   <div className="font-semibold text-purple-600">{formatSurface(korpus.powierzchniaFront)} m²</div>
                   <div className="text-gray-600">Front</div>
                   <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaFront)} zł</div>
                 </div>
-                
                 <div className="text-center p-3 bg-orange-50 rounded-lg">
                   <div className="text-2xl mb-1">🔗</div>
                   <div className="font-semibold text-orange-600">{formatSurface(korpus.okleinaMetry, 2)} m</div>
                   <div className="text-gray-600">Okleina</div>
                   <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaOkleina)} zł</div>
                 </div>
-
               </div>
             </div>
           )}
@@ -502,5 +392,6 @@ const KorpusCard = ({
     </div>
   );
 };
+
 
 export default KorpusyTable;
