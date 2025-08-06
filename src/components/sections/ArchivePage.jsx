@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useProject } from '../../context/ProjectContext';
 import { db } from '../../firebase/config';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
-import { Folder, Edit, Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { Folder, Edit, Trash2, PlusCircle, Loader2, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ArchivePage = ({ setActiveTab }) => { // Odbieramy funkcję do zmiany zakładek

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Trash2, Eye, EyeOff, TrendingUp,
-  Box, Square, Zap, ChevronDown, ChevronUp, Info
+  Box, Square, Zap, ChevronDown, ChevronUp, Info, Sparkles
 } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';

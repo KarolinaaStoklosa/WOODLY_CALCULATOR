@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, TrendingUp, Plus, Trash2, Wrench, Home, Truck, AlertTriangle } from 'lucide-react';
+import { Layers, TrendingUp, Plus, Trash2, Wrench, Home, Truck, AlertTriangle, Sparkles } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { useProjectMetrics } from '../../hooks/useProjectMetrics';
 

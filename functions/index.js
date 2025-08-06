@@ -12,7 +12,7 @@ exports.createStripeCheckout = onCall({ cors: true }, async (request) => {
   }
 
   const { priceId, mode } = request.data;
-  const YOUR_DOMAIN = "http://localhost:5174"; 
+  const YOUR_DOMAIN = "https://qalc.netlify.app"; 
 
   try {
     const session = await stripe.checkout.sessions.create({
