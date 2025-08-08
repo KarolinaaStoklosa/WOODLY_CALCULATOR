@@ -1,90 +1,61 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
-import app from '../firebase/config';
+// src/context/AuthContext.jsx
+
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { auth, db } from '../firebase/firebaseConfig'; // Upewnij się, że masz import `db`
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // Importuj funkcje Firestore
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
-
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  const signup = async (email, password) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
-      email: user.email,
-      createdAt: new Date(),
-      subscription: { status: 'inactive' }
-    });
-    return userCredential;
-  };
-
-  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
   
-  const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
-    const user = userCredential.user;
-    const userRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(userRef);
-    if (!docSnap.exists()) {
-      await setDoc(userRef, {
-        email: user.email,
-        createdAt: new Date(),
-        subscription: { status: 'inactive' }
-      });
-    }
-    return userCredential;
-  };
-  
-  const logout = () => signOut(auth);
+  // 1. Dodaj stan dla danych firmy TUTAJ, w AuthContext
+  const [companyData, setCompanyData] = useState(null);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, user => {
-      setCurrentUser(user);
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
-          if (docSnap.exists() && docSnap.data().subscription) {
-            setSubscriptionStatus(docSnap.data().subscription.status);
-          } else {
-            setSubscriptionStatus('inactive');
-          }
-          setLoading(false);
-        }, (error) => {
-          console.error("Błąd nasłuchiwania na profil użytkownika:", error);
-          setLoading(false);
-        });
-        return () => unsubscribeProfile();
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        // 2. Kiedy użytkownik jest zalogowany, wczytaj jego dane firmy
+        const companyDocRef = doc(db, 'users', currentUser.uid);
+        const companyDocSnap = await getDoc(companyDocRef);
+        if (companyDocSnap.exists()) {
+          setCompanyData(companyDocSnap.data().companyData);
+          console.log('AuthProvider: Wczytano dane firmy.');
+        } else {
+          console.log('AuthProvider: Nie znaleziono danych firmy dla użytkownika.');
+        }
       } else {
-        setSubscriptionStatus(null);
-        setLoading(false);
+        // Czyść dane firmy po wylogowaniu
+        setCompanyData(null);
       }
+      setLoading(false);
     });
-    return () => unsubscribeAuth();
-  }, [auth, db]);
+    return unsubscribe;
+  }, []);
+  
+  // 3. Stwórz funkcję do zapisywania danych firmy
+  const saveCompanyData = async (data) => {
+    if (user) {
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, { companyData: data }, { merge: true });
+        setCompanyData(data); // Zaktualizuj stan w aplikacji
+        console.log('AuthProvider: Pomyślnie zapisano dane firmy.');
+      } catch (error) {
+        console.error("Błąd podczas zapisywania danych firmy:", error);
+      }
+    }
+  };
 
+
+  // 4. Udostępnij companyData i funkcję zapisu w wartości kontekstu
   const value = {
-    currentUser, loading, subscriptionStatus,
-    signup, login, loginWithGoogle, logout
+    user,
+    companyData,
+    saveCompanyData
   };
 
   return (
@@ -92,4 +63,8 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  return useContext(AuthContext);
 };

@@ -7,7 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Building, Link, Edit3, Image, Plus, Trash2, Loader2 } from 'lucide-react';
 
 const CompanySettings = () => {
-  const { settings, updateSettings } = useProject();
+  const { settings, updateSettings } = useAuth();
   const { currentUser } = useAuth();
   const { register, handleSubmit, reset, setValue, watch } = useForm({ defaultValues: settings });
   
