@@ -1,7 +1,5 @@
-// src/context/AuthContext.jsx
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { auth, db } from '../firebase/firebaseConfig'; // Upewnij się, że masz import `db`
+import { auth, db } from '../firebase/config'; 
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore'; // Importuj funkcje Firestore
 

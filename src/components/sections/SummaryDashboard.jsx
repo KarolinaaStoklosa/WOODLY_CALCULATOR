@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Save, TrendingUp, Package, DollarSign, Calculator } from 'lucide-react';
+import { Download, Save, TrendingUp, Package, DollarSign, Calculator, Sparkles } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { getDropdownOptions } from '../../data/dropdowns';
 import OfferButtons from '../ui/OfferButtons';
