@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, RotateCcw, Info } from 'lucide-react';
 import { useProjectSection } from '../../context/ProjectContext';
 import { useMaterials } from '../../context/MaterialContext';
+import { useCalculator } from '../../hooks/useCalculator';
 
 const ZawiasyTable = () => {
   const { items: zawiasy, addItem, updateItem, removeItem, total } = useProjectSection('zawiasy');
