@@ -5,6 +5,29 @@ import { useAuth } from './AuthContext';
 import { useCalculator } from '../hooks/useCalculator';
 import { useMaterials } from './MaterialContext'; // 1. Importujemy hook do materiałów
 
+const initialProjectState = {
+  projectName: '',
+  clientName: '',
+  date: new Date().toISOString().split('T')[0],
+  sections: {
+    korpusy: [],
+    szuflady: [],
+    fronty: [],
+    zawiasy: [],
+    podnosniki: [],
+    uchwyty: [],
+    akcesoria: [],
+    blaty: [],
+    inne: [],
+  },
+  summary: {
+    total: 0,
+    margin: 20,
+    tax: 23,
+    finalPrice: 0,
+    otherCosts: 0,
+  },
+};
 
 const ProjectContext = createContext();
 
@@ -225,10 +248,13 @@ export const ProjectProvider = ({ children }) => {
   };
   
   const resetProject = () => {
-    setProjectData(null);
+    // Użyj obiektu stanu początkowego zamiast null
+    setProjectData(initialProjectState); 
+    // Reszta logiki pozostaje bez zmian
     setCalculations(defaultCalculations);
     setSettings(defaultSettings);
-    setActiveProjectId('main');
+    setActiveProjectId('main'); // 
+    console.log('Stan projektu został PRAWIDŁOWO zresetowany do wartości początkowych.');
   };
 
   const contextValue = { 
@@ -239,8 +265,7 @@ export const ProjectProvider = ({ children }) => {
     loadProject, createNewProject, deleteProject,
     saveProjectToArchive,
     exportToJson,
-    resetProject
-  };
+    resetProject, resetProject  };
 
   return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;
 };
