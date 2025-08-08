@@ -262,7 +262,7 @@ export const ProjectProvider = ({ children }) => {
     loadProject, createNewProject, deleteProject,
     saveProjectToArchive,
     exportToJson,
-    resetProject, resetProject  };
+    resetProject  };
 
   return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;
 };
