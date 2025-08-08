@@ -6,27 +6,20 @@ import { useCalculator } from '../hooks/useCalculator';
 import { useMaterials } from './MaterialContext'; // 1. Importujemy hook do materiałów
 
 const initialProjectState = {
+  id: `project_${new Date().getTime()}`, // Zawsze generuj nowe ID dla czystego projektu
   projectName: '',
   clientName: '',
   date: new Date().toISOString().split('T')[0],
   sections: {
-    korpusy: [],
-    szuflady: [],
-    fronty: [],
-    zawiasy: [],
-    podnosniki: [],
-    uchwyty: [],
-    akcesoria: [],
-    blaty: [],
-    inne: [],
+    korpusy: [], szuflady: [], fronty: [],
+    zawiasy: [], podnosniki: [], uchwyty: [],
+    akcesoria: [], blaty: [], inne: []
   },
   summary: {
-    total: 0,
-    margin: 20,
-    tax: 23,
-    finalPrice: 0,
-    otherCosts: 0,
+    total: 0, margin: 20, tax: 23,
+    finalPrice: 0, otherCosts: 0
   },
+  notes: '',
 };
 
 const ProjectContext = createContext();
@@ -248,14 +241,18 @@ export const ProjectProvider = ({ children }) => {
   };
   
   const resetProject = () => {
-    // Użyj obiektu stanu początkowego zamiast null
-    setProjectData(initialProjectState); 
-    // Reszta logiki pozostaje bez zmian
-    setCalculations(defaultCalculations);
-    setSettings(defaultSettings);
-    setActiveProjectId('main'); // 
-    console.log('Stan projektu został PRAWIDŁOWO zresetowany do wartości początkowych.');
-  };
+  // 1. Ustaw dane projektu na "czystą kartkę" używając zdefiniowanego obiektu.
+  // To jest STABILNE i nie spowoduje błędów w aplikacji.
+  setProjectData(initialProjectState);
+  // 2. Ustaw ID aktywnego projektu na ID tego nowego, pustego obiektu.
+  setActiveProjectId(initialProjectState.id);
+  // 3. NAJWAŻNIEJSZE: Wyczyść zapisane w przeglądarce "ID ostatniego projektu".
+  localStorage.removeItem('lastActiveProject');
+  // Opcjonalnie: Możesz też zresetować inne stany, jeśli jest taka potrzeba
+  setCalculations(defaultCalculations);
+  setSettings(defaultSettings);
+  console.log('SYSTEM: Projekt został w pełni zresetowany. Usunięto powiązanie z localStorage.');
+};
 
   const contextValue = { 
     projectData, calculations, settings, totals, isSaving, activeProjectId,
