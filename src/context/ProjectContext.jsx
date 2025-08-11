@@ -215,13 +215,17 @@ export const ProjectProvider = ({ children }) => {
       const frontyCost = szafki.reduce((sum, item) => sum + (item.cenaFront || 0), 0);
       const widocznyBokCost = widocznyBok.reduce((sum, item) => sum + (item.cenaCałość || 0), 0);
       const tylSurface = szafki.reduce((sum, szafka) => sum + ((parseFloat(szafka.szerokość) || 0) * (parseFloat(szafka.wysokość) || 0) / 1000000), 0);
-      const wasteDetails = {
-        korpusy: korpusyCost * (settings.wasteSettings.korpusyPolki / 100),
-        fronty: frontyCost * (settings.wasteSettings.fronty / 100),
-        frontyNaBok: widocznyBokCost * (settings.wasteSettings.frontyNaBok / 100),
-      };
-      const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
       const hdfCost = (tylSurface * (1 + settings.wasteSettings.tylHdf / 100)) * 6.96;
+
+    // ✅ ZMIANA: Dodajemy brakujący koszt odpadów HDF do obiektu `wasteDetails`
+    const wasteDetails = {
+      korpusy: korpusyCost * (settings.wasteSettings.korpusyPolki / 100),
+      fronty: frontyCost * (settings.wasteSettings.fronty / 100),
+      frontyNaBok: widocznyBokCost * (settings.wasteSettings.frontyNaBok / 100),
+      hdf: hdfCost * (settings.wasteSettings.tylHdf / 100),
+    };
+      const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
+      
       const transportCost = settings.transport.active ? (settings.transport.distance * settings.transport.pricePerKm) : 0;
       const projectCost = settings.projectTypeActive ? settings.projectTypePrice : 0;
       const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => sum + (item.pricePerUnit * item.quantity), 0);

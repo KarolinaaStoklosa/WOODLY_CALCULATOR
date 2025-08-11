@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useProject } from '../../context/ProjectContext';
+import { useProject } from '../../context/ProjectContext'; // ✅ ZMIANA: Używamy `useProject`
 import { useAuth } from '../../context/AuthContext';
 import { storage } from '../../firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Building, Link, Edit3, Image, Plus, Trash2, Loader2 } from 'lucide-react';
 
 const CompanySettings = () => {
-  const { settings, updateSettings } = useAuth();
+  // ✅ ZMIANA: Pobieramy `settings` i `updateSettings` z `useProject`, a nie `useAuth`
+  const { settings, updateSettings } = useProject();
   const { currentUser } = useAuth();
+  
   const { register, handleSubmit, reset, setValue, watch } = useForm({ defaultValues: settings });
   
   const [isUploading, setIsUploading] = useState({ logo: false, backgroundImage: false });
@@ -115,41 +117,27 @@ const Section = ({ title, icon: Icon, children }) => (
         {children}
     </div>
 );
-
 const Input = ({ label, name, register, placeholder, type = 'text' }) => (
     <div>
         <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <input id={name} type={type} placeholder={placeholder} {...register(name)} className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
     </div>
 );
-
 const FileInput = ({ label, name, onChange, preview, loading }) => (
     <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <div className="flex items-center gap-4">
             <div className="w-16 h-16 border rounded-md bg-gray-50 flex items-center justify-center text-gray-400 relative shrink-0">
-              {loading ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                preview ? <img src={preview} alt="Podgląd" className="w-full h-full object-contain" /> : "Podgląd"
-              )}
+              {loading ? ( <Loader2 className="w-6 h-6 animate-spin" /> ) : ( preview ? <img src={preview} alt="Podgląd" className="w-full h-full object-contain" /> : "Podgląd" )}
             </div>
             <input type="file" accept="image/*" onChange={(e) => onChange(e, name)} disabled={loading} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50" />
         </div>
     </div>
 );
-
 const EditableTextList = ({ label, items, onUpdate }) => {
-    const handleUpdate = (id, newText) => {
-        onUpdate(items.map(item => item.id === id ? { ...item, text: newText } : item));
-    };
-    const handleRemove = (id) => {
-        onUpdate(items.filter(item => item.id !== id));
-    };
-    const handleAdd = () => {
-        onUpdate([...(items || []), { id: Date.now(), text: '' }]);
-    };
-
+    const handleUpdate = (id, newText) => { onUpdate(items.map(item => item.id === id ? { ...item, text: newText } : item)); };
+    const handleRemove = (id) => { onUpdate(items.filter(item => item.id !== id)); };
+    const handleAdd = () => { onUpdate([...(items || []), { id: Date.now(), text: '' }]); };
     return (
         <div>
             <h3 className="text-base font-semibold text-gray-800 mb-2">{label}</h3>

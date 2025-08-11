@@ -13,6 +13,7 @@ const SummaryDashboard = () => {
   const getOfferData = () => {
     const szafki = calculations?.szafki || [];
     const blaty = calculations?.blaty || [];
+    const widoczneBoki = calculations?.widocznyBok || [];
     const blatyOptions = getDropdownOptions('blaty');
     
     // ✅ ZMIANA: Definiujemy stałą, niezmienną kolejność sekcji
@@ -41,10 +42,22 @@ const SummaryDashboard = () => {
     const sortedSzafkiMaterialSummary = Object.entries(szafkiMaterialSummaryObject)
       .sort((a, b) => a[0].localeCompare(b[0]));
 
+       const widocznyBokMaterialSummaryObject = widoczneBoki.reduce((summary, bok) => {
+        const material = bok.rodzaj;
+        const surface = bok.powierzchnia || 0;
+        if (material && surface > 0) {
+            summary[material] = (summary[material] || 0) + surface;
+        }
+        return summary;
+    }, {});
+    const sortedWidocznyBokMaterialSummary = Object.entries(widocznyBokMaterialSummaryObject).sort((a, b) => a[0].localeCompare(b[0]));
+
+
     const summaryMetrics = {
         iloscSzafek: szafki.length,
         powierzchniaKorpusyPolki: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaKorpus || 0) + (szafka.powierzchniaPółek || 0), 0),
         powierzchniaFronty: szafki.reduce((sum, szafka) => sum + (szafka.powierzchniaFront || 0), 0),
+        powierzchniaBokowWidocznych: widoczneBoki.reduce((sum, bok) => sum + (bok.powierzchnia || 0), 0), // Nowa metryka
         iloscBlatowProduktow: blaty.reduce((sum, b) => {
             const itemInfo = blatyOptions.find(opt => opt.nazwa === b.rodzaj);
             if (itemInfo && itemInfo.typ === 'produkt') { return sum + (parseFloat(b.ilość) || 0); }
@@ -58,6 +71,7 @@ const SummaryDashboard = () => {
         totals: totals,
         summaryMetrics: summaryMetrics,
         szafkiMaterialSummary: sortedSzafkiMaterialSummary,
+        widocznyBokMaterialSummary: sortedWidocznyBokMaterialSummary,
         activeSections: sectionOrder.map(key => {
         const data = calculations[key];
         if (!data || !Array.isArray(data) || data.length === 0) return null;

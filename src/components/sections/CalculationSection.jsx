@@ -1,5 +1,5 @@
-import React from 'react';
-import { Layers, TrendingUp, Plus, Trash2, Wrench, Home, Truck, AlertTriangle, Sparkles } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Layers, TrendingUp, Plus, Trash2, Wrench, Home, Truck, AlertTriangle } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { useProjectMetrics } from '../../hooks/useProjectMetrics';
 
@@ -22,8 +22,35 @@ const CalculationSection = () => {
   const handleAddItem = (itemType, newItem) => updateSettings({ [itemType]: [...(settings[itemType] || []), { ...newItem, id: Date.now() }] });
   const handleRemoveItem = (itemType, id) => updateSettings({ [itemType]: (settings[itemType] || []).filter(item => item.id !== id) });
 
+  // ✅ NOWA LOGIKA: Automatyczne aktualizowanie ilości formatek CNC
+  useEffect(() => {
+    const szafki = calculations?.szafki || [];
+    const widoczneBoki = calculations?.widocznyBok || [];
+
+    // Liczymy formatki: 4 na każdy korpus (boki+góra/dół) + 1 na każdy front + 1 na każdy widoczny bok
+    const iloscFormatekCNC = 
+      (szafki.length * 4) + 
+      szafki.filter(szafka => szafka.plytyFront && szafka.plytyFront !== '-- BRAK FRONTU --').length +
+      widoczneBoki.length;
+
+    // Aktualizujemy stan `serviceItems` w kontekście
+    const updatedServices = (settings.serviceItems || []).map(item => {
+      if (item.name === 'PUNKT WIERCENIA CNC') {
+        return { ...item, quantity: iloscFormatekCNC };
+      }
+      return item;
+    });
+
+    // Sprawdzamy, czy faktycznie jest zmiana, aby uniknąć nieskończonej pętli
+    if (JSON.stringify(updatedServices) !== JSON.stringify(settings.serviceItems)) {
+        updateSettings({ serviceItems: updatedServices });
+    }
+  }, [calculations.szafki, calculations.widocznyBok, settings.serviceItems, updateSettings]);
+
+
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {/* --- PODSUMOWANIE FINANSOWE --- */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-sm border p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">💰 Podsumowanie finansowe</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -111,6 +138,7 @@ const CalculationSection = () => {
                     <RangeInput label={`Korpusy + półki (${settings.wasteSettings.korpusyPolki}%)`} value={settings.wasteSettings.korpusyPolki} onChange={e => handleNestedSettingChange('wasteSettings', 'korpusyPolki', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.korpusy)} />
                     <RangeInput label={`Fronty (${settings.wasteSettings.fronty}%)`} value={settings.wasteSettings.fronty} onChange={e => handleNestedSettingChange('wasteSettings', 'fronty', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.fronty)} />
                     <RangeInput label={`Fronty na bok (${settings.wasteSettings.frontyNaBok}%)`} value={settings.wasteSettings.frontyNaBok} onChange={e => handleNestedSettingChange('wasteSettings', 'frontyNaBok', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.frontyNaBok)} />
+                    <RangeInput label={`Tył HDF (${settings.wasteSettings.tylHdf}%)`} value={settings.wasteSettings.tylHdf} onChange={e => handleNestedSettingChange('wasteSettings', 'tylHdf', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.hdf)} />
                 </div>
                 <div>
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-3"><Truck className="text-blue-600"/>Transport</h3>
