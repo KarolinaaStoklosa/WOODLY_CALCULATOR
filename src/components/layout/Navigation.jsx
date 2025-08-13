@@ -124,24 +124,6 @@ const Navigation = ({ activeTab, setActiveTab, isOpen, closeSidebar }) => {
           </div>
         </div>
 
-        <div className="p-4 border-t">
-          <div className="p-4 bg-gray-50 rounded-xl border">
-            <div className="flex items-start mb-3">
-              <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                <LifeBuoy className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800 text-sm">Potrzebujesz pomocy?</h3>
-                <p className="text-xs text-gray-600 mt-1">
-                  Centrum pomocy i dokumentacja
-                </p>
-              </div>
-            </div>
-            <button className="w-full text-xs text-blue-600 font-semibold hover:text-blue-700 text-left">
-              📚 Otwórz dokumentację
-            </button>
-          </div>
-        </div>
       </nav>
     </>
   );

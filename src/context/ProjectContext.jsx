@@ -138,10 +138,12 @@ export const ProjectProvider = ({ children }) => {
 
   const resetProject = useCallback(async () => {
     // 1. Czyścimy stan lokalny w aplikacji
+    setIsEditMode(true); 
     setProjectData(null);
     setCalculations(defaultCalculations);
     setActiveProjectId('main');
     localStorage.removeItem('lastActiveProject');
+
 
     // 2. Czyścimy projekt roboczy ('main') w bazie danych
     if (currentUser) {
