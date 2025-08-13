@@ -134,13 +134,31 @@ export const ProjectProvider = ({ children }) => {
     setProjectData(data);
   }, []);
 
-  const resetProject = useCallback(() => {
+  const resetProject = useCallback(async () => {
+    // 1. Czyścimy stan lokalny w aplikacji
     setProjectData(null);
     setCalculations(defaultCalculations);
-    setSettings(defaultSettings);
     setActiveProjectId('main');
     localStorage.removeItem('lastActiveProject');
-  }, []);
+
+    // 2. Czyścimy projekt roboczy ('main') w bazie danych
+    if (currentUser) {
+      const mainProjectRef = doc(db, 'users', currentUser.uid, 'projects', 'main');
+      try {
+        await setDoc(mainProjectRef, {
+          projectData: null,
+          calculations: defaultCalculations,
+          // Ważne: Zapisujemy bieżące `settings`, aby nie utracić danych firmy!
+          settings: settings, 
+          lastSaved: serverTimestamp(),
+        });
+        console.log("Projekt roboczy 'main' został wyczyszczony w bazie danych.");
+      } catch (error) {
+        console.error("Błąd podczas czyszczenia projektu roboczego w bazie:", error);
+      }
+    }
+  }, [currentUser, settings]); // Dodano zależności, aby funkcja miała dostęp do aktualnych danych
+
 
   const createNewProject = useCallback(async (newProjectData) => {
     if (!currentUser) return null;
@@ -217,8 +235,7 @@ export const ProjectProvider = ({ children }) => {
   
   useEffect(() => {
     if (!currentUser) {
-      resetProject();
-      return;
+      return; // Nie rób nic, jeśli nie ma użytkownika
     }
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId || 'main');
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
@@ -228,19 +245,23 @@ export const ProjectProvider = ({ children }) => {
         setCalculations(data.calculations || defaultCalculations);
         setSettings(data.settings || defaultSettings);
       } else {
+        // Jeśli dokument nie istnieje, resetujemy lokalny stan
         setProjectData(null);
         setCalculations(defaultCalculations);
-        setSettings(defaultSettings);
+        // Nie resetujemy `settings` do domyślnych, chyba że jest to zamierzone
       }
     }, (error) => {
         console.error("Błąd wczytywania projektu:", error);
-        resetProject();
     });
     return () => unsubscribe();
-  }, [currentUser, activeProjectId, resetProject]);
+  }, [currentUser, activeProjectId]);
   
   useEffect(() => {
-    const handler = setTimeout(() => { saveDataToFirestore(); }, 2500);
+    const handler = setTimeout(() => {
+      if (projectData) { // Zapisujemy tylko, jeśli jest aktywny projekt
+        saveDataToFirestore();
+      }
+    }, 2500);
     return () => clearTimeout(handler);
   }, [projectData, calculations, settings, saveDataToFirestore]);
   
