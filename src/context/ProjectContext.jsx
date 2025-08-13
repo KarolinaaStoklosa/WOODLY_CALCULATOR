@@ -235,24 +235,41 @@ export const ProjectProvider = ({ children }) => {
   
   useEffect(() => {
     if (!currentUser) {
-      return; // Nie rób nic, jeśli nie ma użytkownika
+      return;
     }
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId || 'main');
+    
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      // ✅ KLUCZOWA POPRAWKA: Inteligentna synchronizacja
+      // Ignorujemy aktualizacje, które pochodzą z naszego własnego, lokalnego zapisu,
+      // który jeszcze nie został w pełni przetworzony przez serwer.
+      // To zapobiega nadpisywaniu danych, które właśnie edytujesz.
+      if (docSnap.metadata.hasPendingWrites) {
+        return;
+      }
+
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setProjectData(data.projectData || null);
-        setCalculations(data.calculations || defaultCalculations);
-        setSettings(data.settings || defaultSettings);
+        // Sprawdzamy, czy dane z bazy są inne niż lokalne, aby uniknąć zbędnych re-renderów
+        if (JSON.stringify(data.projectData) !== JSON.stringify(projectData)) {
+            setProjectData(data.projectData || null);
+        }
+        if (JSON.stringify(data.calculations) !== JSON.stringify(calculations)) {
+            setCalculations(data.calculations || defaultCalculations);
+        }
+        if (JSON.stringify(data.settings) !== JSON.stringify(settings)) {
+            setSettings(data.settings || defaultSettings);
+        }
       } else {
-        // Jeśli dokument nie istnieje, resetujemy lokalny stan
+        // Jeśli dokument nie istnieje, resetujemy lokalny stan roboczy
         setProjectData(null);
         setCalculations(defaultCalculations);
-        // Nie resetujemy `settings` do domyślnych, chyba że jest to zamierzone
+        // `settings` pozostają, bo są globalne
       }
     }, (error) => {
         console.error("Błąd wczytywania projektu:", error);
     });
+
     return () => unsubscribe();
   }, [currentUser, activeProjectId]);
   
