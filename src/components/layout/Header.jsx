@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; // 1. Importujemy hook do autentykacji
-import { Menu, Sun, Moon, Settings, User, Search, Package, LogOut } from 'lucide-react';
+import { useProject } from '../../context/ProjectContext';
+import { Menu, Sun, Moon, Settings, User, Search, Package, LogOut, Edit, Save, X, Loader2 } from 'lucide-react';
+
 
 const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
   // 2. Pobieramy dane o użytkowniku i funkcję wylogowania z kontekstu
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+   const { isEditMode, setIsEditMode, saveDataToFirestore, isSaving } = useProject();
+  
+  
 
   // 3. Dodajemy stan do zarządzania menu podręcznym użytkownika
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -18,6 +23,13 @@ const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
       navigate('/login'); // Przekieruj na stronę logowania po wylogowaniu
     } catch (error) {
       console.error("Błąd podczas wylogowywania", error);
+    }
+  };
+
+   const handleCancelEdit = () => {
+    if (window.confirm("Czy na pewno chcesz anulować zmiany? Wszystkie niezapisane dane zostaną utracone.")) {
+        // Logika resetowania do stanu z bazy danych (do zaimplementowania, na razie wyłącza tryb edycji)
+        setIsEditMode(false); 
     }
   };
 
@@ -71,6 +83,28 @@ const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
             />
           </div>
         </div>
+
+        {currentUser && (
+            <div className="flex items-center gap-2">
+                {!isEditMode ? (
+                    <button onClick={() => setIsEditMode(true)} className="flex items-center gap-2 bg-blue-100 text-blue-700 font-semibold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors text-sm">
+                        <Edit size={16} /> <span>Tryb Edycji</span>
+                    </button>
+                ) : (
+                    <>
+                        <button onClick={handleCancelEdit} className="flex items-center gap-2 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm">
+                            <X size={16} /> <span>Anuluj</span>
+                        </button>
+                        <button onClick={saveDataToFirestore} disabled={isSaving} className="flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm disabled:bg-green-300">
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            <span>{isSaving ? 'Zapisywanie...' : 'Zapisz Zmiany'}</span>
+                        </button>
+                    </>
+                )}
+            </div>
+          )}
+          <div className="h-8 border-l border-gray-200 mx-2"></div>
+
 
         {/* Prawa strona: Akcje */}
         <div className="flex items-center gap-2">

@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Eye, EyeOff, TrendingUp,
   Box, Square, Zap, ChevronDown, ChevronUp, Info, Sparkles
 } from 'lucide-react';
-import { useProjectSection } from '../../context/ProjectContext';
+import { useProjectSection, useProject } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
 import { useMaterials } from '../../context/MaterialContext'; // 1. Importujemy nowy hook
 
@@ -17,6 +17,7 @@ const KorpusyTable = () => {
   const okleinaOptions = materials.okleina || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+  const { isEditMode } = useProject();
 
   const handleAddKorpus = () => {
     const newKorpus = {
@@ -159,8 +160,10 @@ const KorpusyTable = () => {
          <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
-              onClick={handleAddKorpus}
-              className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+              onClick={() => handleAddKorpus()}
+              // ✅ ZMIANA 2: Blokujemy główny przycisk dodawania
+              disabled={!isEditMode}
+              className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <div className="relative flex items-center gap-2 text-sm">
@@ -226,6 +229,7 @@ const KorpusyTable = () => {
               okleinaOptions={okleinaOptions}
               formatPrice={formatPrice}
               formatSurface={formatSurface}
+              isEditMode={isEditMode}
             />
           ))}
         </div>
@@ -293,6 +297,7 @@ const KorpusCard = ({
   index, 
   onUpdate, 
   onRemove, 
+  isEditMode,
   showAdvanced,
   plytyKorpusOptions,
   plytyFrontOptions,
@@ -341,7 +346,7 @@ const KorpusCard = ({
               <div className="text-xs text-gray-500">{formatSurface((korpus.powierzchniaKorpus || 0) + (korpus.powierzchniaPółek || 0))} m²</div>
             </div>
             <button onClick={() => setIsExpanded(!isExpanded)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">{isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}</button>
-            <button onClick={() => onRemove(korpus.id)} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => onRemove(korpus.id)} disabled={!isEditMode} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
@@ -355,13 +360,13 @@ const KorpusCard = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Materiał na Korpus</label>
-              <select value={korpus.plytyKorpus} onChange={(e) => onUpdate(korpus.id, 'plytyKorpus', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+              <select value={korpus.plytyKorpus} onChange={(e) => onUpdate(korpus.id, 'plytyKorpus', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 {plytyKorpusOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Materiał na Front</label>
-              <select value={korpus.plytyFront} onChange={(e) => onUpdate(korpus.id, 'plytyFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+              <select value={korpus.plytyFront} onChange={(e) => onUpdate(korpus.id, 'plytyFront', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 {plytyFrontOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
@@ -371,20 +376,20 @@ const KorpusCard = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Okleina Korpusu</label>
-              <select value={korpus.okleina} onChange={(e) => onUpdate(korpus.id, 'okleina', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+              <select value={korpus.okleina} onChange={(e) => onUpdate(korpus.id, 'okleina', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 {okleinaOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Okleina Frontu</label>
-              <select value={korpus.okleinaFront || '-- BRAK OKLEINY --'} onChange={(e) => onUpdate(korpus.id, 'okleinaFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" disabled={korpus.plytyFront === '-- BRAK FRONTU --'}>
+              <select value={korpus.okleinaFront || '-- BRAK OKLEINY --'} onChange={(e) => onUpdate(korpus.id, 'okleinaFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" disabled={korpus.plytyFront === '-- BRAK FRONTU --' || !isEditMode}>
                 <option value="-- BRAK OKLEINY --">-- BRAK OKLEINY --</option>
                 {okleinaOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Podział frontu (szt)</label>
-              <input type="number" value={korpus.podziałFrontu || 1} onChange={(e) => onUpdate(korpus.id, 'podziałFrontu', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="1" min="1" disabled={korpus.plytyFront === '-- BRAK FRONTU --'}/>
+              <input type="number" value={korpus.podziałFrontu || 1} onChange={(e) => onUpdate(korpus.id, 'podziałFrontu', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="1" min="1" disabled={korpus.plytyFront === '-- BRAK FRONTU --' || !isEditMode}/>
             </div>
           </div>
 
@@ -392,23 +397,23 @@ const KorpusCard = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Szer. [mm]</label>
-              <input type="number" value={korpus.szerokość} onChange={(e) => onUpdate(korpus.id, 'szerokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="600" />
+              <input type="number" value={korpus.szerokość} onChange={(e) => onUpdate(korpus.id, 'szerokość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="600" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Wys. [mm]</label>
-              <input type="number" value={korpus.wysokość} onChange={(e) => onUpdate(korpus.id, 'wysokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="720" />
+              <input type="number" value={korpus.wysokość} onChange={(e) => onUpdate(korpus.id, 'wysokość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="720" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Głęb. [mm]</label>
-              <input type="number" value={korpus.głębokość} onChange={(e) => onUpdate(korpus.id, 'głębokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="350" />
+              <input type="number" value={korpus.głębokość} onChange={(e) => onUpdate(korpus.id, 'głębokość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="350" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Półki [szt]</label>
-              <input type="number" value={korpus.ilośćPółek} onChange={(e) => onUpdate(korpus.id, 'ilośćPółek', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="2" min="0" />
+              <input type="number" value={korpus.ilośćPółek} onChange={(e) => onUpdate(korpus.id, 'ilośćPółek', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="2" min="0" />
             </div>
           </div>
 
-          
+
           {showAdvanced && (
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h4 className="font-semibold text-gray-900 mb-4">📊 Szczegółowe kalkulacje</h4>

@@ -54,6 +54,8 @@ export const ProjectProvider = ({ children }) => {
   const [settings, setSettings] = useState(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState('main');
+   // ✅ 1. Wprowadzamy stan do zarządzania trybem edycji
+  const [isEditMode, setIsEditMode] = useState(false);
   const [totals, setTotals] = useState({
     materialsTotal: 0, additionalTotal: 0, subtotal: 0, marginAmount: 0, netTotal: 0,
     vatAmount: 0, grossTotal: 0, wasteDetails: {}, hdfCost: 0, transportCost: 0,
@@ -205,8 +207,13 @@ export const ProjectProvider = ({ children }) => {
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId);
     try {
       await setDoc(docRef, { projectData, calculations, settings, lastSaved: serverTimestamp() }, { merge: true });
-    } catch (error) { console.error("Błąd podczas zapisu do Firestore:", error); } 
-    finally { setIsSaving(false); }
+      setIsEditMode(false); // Wyłącz tryb edycji po pomyślnym zapisie
+      console.log("Zmiany zostały pomyślnie zapisane.");
+    } catch (error) { 
+      console.error("Błąd podczas zapisu do Firestore:", error); 
+    } finally { 
+      setIsSaving(false); 
+    }
   }, [currentUser, activeProjectId, projectData, calculations, settings]);
 
   const saveProjectToArchive = useCallback(async () => {
@@ -234,60 +241,34 @@ export const ProjectProvider = ({ children }) => {
   }, [projectData, calculations, settings, totals]);
   
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser || isEditMode) { // Listener jest wyłączony w trybie edycji
       return;
     }
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId || 'main');
-    
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      // ✅ KLUCZOWA POPRAWKA: Inteligentna synchronizacja
-      // Ignorujemy aktualizacje, które pochodzą z naszego własnego, lokalnego zapisu,
-      // który jeszcze nie został w pełni przetworzony przez serwer.
-      // To zapobiega nadpisywaniu danych, które właśnie edytujesz.
-      if (docSnap.metadata.hasPendingWrites) {
-        return;
-      }
-
+      if (docSnap.metadata.hasPendingWrites) return;
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Sprawdzamy, czy dane z bazy są inne niż lokalne, aby uniknąć zbędnych re-renderów
-        if (JSON.stringify(data.projectData) !== JSON.stringify(projectData)) {
-            setProjectData(data.projectData || null);
-        }
-        if (JSON.stringify(data.calculations) !== JSON.stringify(calculations)) {
-            setCalculations(data.calculations || defaultCalculations);
-        }
-        if (JSON.stringify(data.settings) !== JSON.stringify(settings)) {
-            setSettings(data.settings || defaultSettings);
-        }
+        setProjectData(data.projectData || null);
+        setCalculations(data.calculations || defaultCalculations);
+        setSettings(data.settings || defaultSettings);
       } else {
-        // Jeśli dokument nie istnieje, resetujemy lokalny stan roboczy
         setProjectData(null);
         setCalculations(defaultCalculations);
-        // `settings` pozostają, bo są globalne
       }
-    }, (error) => {
-        console.error("Błąd wczytywania projektu:", error);
     });
-
     return () => unsubscribe();
-  }, [currentUser, activeProjectId]);
-  
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (projectData) { // Zapisujemy tylko, jeśli jest aktywny projekt
-        saveDataToFirestore();
-      }
-    }, 2500);
-    return () => clearTimeout(handler);
-  }, [projectData, calculations, settings, saveDataToFirestore]);
-  
+  }, [currentUser, activeProjectId, isEditMode]);
+
   useEffect(() => {
     recalculateAllTotals();
   }, [recalculateAllTotals]);
 
   const contextValue = { 
     projectData, calculations, settings, totals, isSaving, activeProjectId,
+    isEditMode, // Udostępniamy stan
+    setIsEditMode, // Udostępniamy funkcję
+    saveDataToFirestore, // Udostępniamy funkcję zapisu
     setProjectData: setProjectDataWithDefaults, 
     updateSectionData, 
     updateSettings, 

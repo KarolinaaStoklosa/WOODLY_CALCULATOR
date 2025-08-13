@@ -4,7 +4,7 @@ import { useProject } from '../../context/ProjectContext';
 import { useProjectMetrics } from '../../hooks/useProjectMetrics';
 
 const CalculationSection = () => {
-  const { calculations, settings, totals, updateSettings } = useProject();
+  const { calculations, settings, totals, updateSettings, isEditMode } = useProject();
   const { calculateAggregatedMetrics } = useProjectMetrics();
   const metrics = calculateAggregatedMetrics(calculations);
 
@@ -80,6 +80,7 @@ const CalculationSection = () => {
       {/* SEKCJA 2: POZYCJE DODATKOWE */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
         <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3"><Plus className="text-blue-600" />Dodatkowe pozycje</h3>
+        <fieldset disabled={!isEditMode}>
         <div className='p-4 bg-gray-50 rounded-lg mb-4'>
             <h4 className='font-semibold mb-3'>Pozycje automatyczne (marżowane)</h4>
             <div className='space-y-3 text-sm'>
@@ -97,6 +98,8 @@ const CalculationSection = () => {
                 </div>
             </div>
         </div>
+        </fieldset>
+        <fieldset disabled={!isEditMode}>
         <div className='p-4 bg-gray-50 rounded-lg mb-4'>
             <h4 className='font-semibold mb-3'>Pozycje ręczne (usługi, montaż)</h4>
             <div className="space-y-3">
@@ -104,6 +107,7 @@ const CalculationSection = () => {
               <button onClick={() => handleAddItem('serviceItems', { name: 'Nowa usługa', pricePerUnit: 0, quantity: 1, unit: 'szt', active: true })} className="w-full py-2 border-2 border-dashed rounded-lg text-gray-600 hover:border-green-400 hover:text-green-600 flex items-center justify-center gap-2"><Plus className="w-4 h-4" />Dodaj usługę</button>
             </div>
         </div>
+        </fieldset>
       </div>
 
       {/* SEKCJA 3: USTAWIENIA SZCZEGÓŁOWE */}
@@ -113,15 +117,18 @@ const CalculationSection = () => {
         <p className="text-sm text-gray-500 mb-6">Główne wskaźniki wpływające na cenę dla klienta.</p>
         
         <div className='p-4 bg-gray-50 rounded-lg mb-4'>
+          <fieldset disabled={!isEditMode}>
             <div className='flex justify-between text-sm mb-2'>
                 <span className='text-gray-600'>Podstawa do naliczeń (materiały + koszty):</span>
                 <span className='font-bold text-gray-800'>{formatPrice(totals.subtotal)}</span>
             </div>
             <hr className='my-3'/>
             <RangeInput label={`Marża (${settings.margin}%)`} value={settings.margin} onChange={e => handleSettingChange('margin', parseInt(e.target.value))} max={100} amount={formatPrice(totals.marginAmount)} />
+          </fieldset>
         </div>
         
         <div className='p-4 bg-gray-50 rounded-lg mb-4'>
+          <fieldset disabled={!isEditMode}>
           <h4 className='font-semibold text-gray-800 mb-3 flex items-center gap-2'><Gift className="text-red-500"/>Pozycje Dodatkowe (niemarżowane)</h4>
           {(settings.nonMarginableItems || []).map(item => (
             <div key={item.id} className="grid grid-cols-12 gap-2 items-center mt-2">
@@ -134,16 +141,20 @@ const CalculationSection = () => {
             </div>
           ))}
           <button onClick={handleAddNonMarginableItem} className="w-full mt-3 py-2 border-2 border-dashed rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-2 text-sm"><Plus className="w-4 h-4" />Dodaj pozycję</button>
+        </fieldset>
         </div>
         
         <div className='p-4 bg-gray-50 rounded-lg'>
+          <fieldset disabled={!isEditMode}>
           <CheckboxInput label="Uwzględnij VAT" checked={settings.showVAT} onChange={e => handleSettingChange('showVAT', e.target.checked)} />
           {settings.showVAT && <NumberInput label={`Stawka VAT (%)`} value={settings.vatRate} onChange={e => handleSettingChange('vatRate', parseInt(e.target.value) || 23)} amount={formatPrice(totals.vatAmount)} />}
+        </fieldset>
         </div>
       </div>
 
       {/* KARTA 2: KOSZTY DODATKOWE PROJEKTU */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
+        <fieldset disabled={!isEditMode}>
         <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">🚚 Koszty Dodatkowe Projektu</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div>
@@ -172,10 +183,12 @@ const CalculationSection = () => {
               )}
           </div>
         </div>
+        </fieldset>
       </div>
       
       {/* KARTA 3: USTAWIENIA ODPADÓW */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
+        <fieldset disabled={!isEditMode}>
         <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3"><AlertTriangle className="text-orange-600" />Ustawienia Odpadów Materiałowych</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
           <RangeInput label={`Korpusy + półki (${settings.wasteSettings.korpusyPolki}%)`} value={settings.wasteSettings.korpusyPolki} onChange={e => handleNestedSettingChange('wasteSettings', 'korpusyPolki', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.korpusy)} />
@@ -183,6 +196,7 @@ const CalculationSection = () => {
           <RangeInput label={`Fronty na bok (${settings.wasteSettings.frontyNaBok}%)`} value={settings.wasteSettings.frontyNaBok} onChange={e => handleNestedSettingChange('wasteSettings', 'frontyNaBok', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.frontyNaBok)} />
           <RangeInput label={`Tył HDF (${settings.wasteSettings.tylHdf}%)`} value={settings.wasteSettings.tylHdf} onChange={e => handleNestedSettingChange('wasteSettings', 'tylHdf', parseInt(e.target.value))} amount={formatPrice(totals.wasteDetails.hdf)} />
         </div>
+        </fieldset>
       </div>
     </div>
   );

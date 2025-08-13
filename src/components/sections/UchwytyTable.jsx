@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Grip, Info } from 'lucide-react';
-import { useProjectSection } from '../../context/ProjectContext';
+import { Plus, Trash2, TrendingUp, Grip } from 'lucide-react';
+import { useProjectSection, useProject } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
 import { useMaterials } from '../../context/MaterialContext';
 
 const UchwytyTable = () => {
+  const { isEditMode } = useProject();
   const { items: uchwyty, addItem, updateItem, removeItem, total } = useProjectSection('uchwyty');
   const { calculateUchwyt, formatPrice } = useCalculator();
   const { materials } = useMaterials();
@@ -64,12 +65,12 @@ const UchwytyTable = () => {
           <div className="text-2xl font-bold text-gray-900">{formatPrice(total)} zł</div>
         </div>
       </div>
-
+      
       <div className="bg-white/70 backdrop-blur-xl rounded-xl p-3 border border-white/20 shadow-md mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button onClick={handleAddUchwyt} className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-violet-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"><div className="relative flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /><span>Dodaj uchwyt</span></div></button>
-            <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm">{showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}<span>Szczegóły</span></button>
+            <button onClick={handleAddUchwyt} disabled={!isEditMode} className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-violet-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"><div className="relative flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /><span>Dodaj uchwyt</span></div></button>
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm">{showAdvanced ? 'Ukryj' : 'Szczegóły'}</button>
           </div>
         </div>
       </div>
@@ -78,12 +79,12 @@ const UchwytyTable = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-16 border border-white/20 shadow-lg text-center">{/* Empty State */}</div>
       ) : (
         <div className="space-y-4">
-          {uchwyty.map((uchwyt, index) => <UchwytCard key={uchwyt.id} uchwyt={uchwyt} index={index} onUpdate={handleUpdateUchwyt} onRemove={handleRemoveUchwyt} showAdvanced={showAdvanced} uchwytyOptions={uchwytyOptions} formatPrice={formatPrice} />)}
+          {uchwyty.map((uchwyt, index) => <UchwytCard key={uchwyt.id} uchwyt={uchwyt} index={index} onUpdate={handleUpdateUchwyt} onRemove={handleRemoveUchwyt} showAdvanced={showAdvanced} uchwytyOptions={uchwytyOptions} formatPrice={formatPrice} isEditMode={isEditMode} />)}
         </div>
       )}
       {uchwyty.length  > 0 &&
         <div className="pt-2">
-          <button onClick={handleAddUchwyt} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200">
+          <button onClick={handleAddUchwyt} disabled={!isEditMode} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus size={16} />
             <span className="text-sm font-semibold">Dodaj nowy uchwyt poniżej</span>
           </button>
@@ -92,7 +93,7 @@ const UchwytyTable = () => {
   );
 };
 
-const UchwytCard = ({ uchwyt, index, onUpdate, onRemove, showAdvanced, uchwytyOptions, formatPrice }) => (
+const UchwytCard = ({ uchwyt, index, onUpdate, onRemove, showAdvanced, uchwytyOptions, formatPrice, isEditMode }) => (
     <div className="group bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
         <div className="p-4">
             <div className="flex items-center justify-between">
@@ -100,11 +101,11 @@ const UchwytCard = ({ uchwyt, index, onUpdate, onRemove, showAdvanced, uchwytyOp
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">{index + 1}</div>
                     <div className="flex-1">
                         <label className="block text-xs font-medium text-gray-600 mb-1">Rodzaj uchwytu</label>
-                        <select value={uchwyt.rodzaj} onChange={(e) => onUpdate(uchwyt.id, 'rodzaj', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm">{uchwytyOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}</select>
+                        <select value={uchwyt.rodzaj} onChange={(e) => onUpdate(uchwyt.id, 'rodzaj', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm disabled:bg-gray-100 disabled:cursor-not-allowed">{uchwytyOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}</select>
                     </div>
                     <div className="w-24">
                         <label className="block text-xs font-medium text-gray-600 mb-1">Ilość</label>
-                        <input type="number" value={uchwyt.ilość} onChange={(e) => onUpdate(uchwyt.id, 'ilość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-center text-sm" placeholder="1" min="1" />
+                        <input type="number" value={uchwyt.ilość} onChange={(e) => onUpdate(uchwyt.id, 'ilość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-center text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="1" min="1" />
                     </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
@@ -112,7 +113,7 @@ const UchwytCard = ({ uchwyt, index, onUpdate, onRemove, showAdvanced, uchwytyOp
                         <div className="text-lg font-bold text-green-600">{formatPrice(uchwyt.cenaCałość)} zł</div>
                         {showAdvanced && (<div className="text-xs text-gray-500">{formatPrice(uchwyt.cenaJednostkowa)} zł/szt</div>)}
                     </div>
-                    <button onClick={() => onRemove(uchwyt.id)} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => onRemove(uchwyt.id)} disabled={!isEditMode} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"><Trash2 className="w-4 h-4" /></button>
                 </div>
             </div>
         </div>

@@ -1,22 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Calculator, Eye, EyeOff, Sparkles, TrendingUp, Layers, Info, ChevronDown, ChevronUp } from 'lucide-react';
-import { useProjectSection } from '../../context/ProjectContext';
+import { useProjectSection, useProject } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
 import { useMaterials } from '../../context/MaterialContext';
 
 const WidocznyBokTable = () => {
+  const { isEditMode } = useProject();
   const { items: widoczneBoki, addItem, updateItem, removeItem, total } = useProjectSection('widocznyBok');
   const { calculateWidocznyBok, formatPrice, formatSurface } = useCalculator();
   const { materials } = useMaterials();
   const frontyOptions = materials.fronty || [];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const handleAddWidocznyBok = () => {
-    const newWidocznyBok = { rodzaj: frontyOptions.find(f => f.cena > 0)?.nazwa || '', szerokość: '', wysokość: '', ilość: '1', powierzchnia: 0, cenaZaM2: 0, cenaCałość: 0 };
+  const handleAddWidocznyBok = useCallback(() => {
+    const newWidocznyBok = { id: Date.now(), rodzaj: frontyOptions.find(f => f.cena > 0)?.nazwa || '', szerokość: '', wysokość: '', ilość: '1', powierzchnia: 0, cenaZaM2: 0, cenaCałość: 0 };
     addItem(newWidocznyBok);
-  };
-  const handleUpdateWidocznyBok = (id, field, value) => updateItem(id, { [field]: value });
-  const handleRemoveWidocznyBok = (id) => removeItem(id);
+  }, [addItem, frontyOptions]);
+
+  const handleUpdateWidocznyBok = useCallback((id, field, value) => {
+    updateItem(id, { [field]: value });
+  }, [updateItem]);
+
+  const handleRemoveWidocznyBok = useCallback((id) => {
+    removeItem(id);
+  }, [removeItem]);
 
   useEffect(() => {
     widoczneBoki.forEach(bok => {
@@ -26,7 +33,7 @@ const WidocznyBokTable = () => {
         updateItem(bok.id, calculated);
       }
     });
-  }, [widoczneBoki.map(b => `${b.rodzaj}-${b.szerokość}-${b.wysokość}-${b.ilość}`).join('|')]);
+  }, [widoczneBoki, calculateWidocznyBok, updateItem]);
 
   const totalSurface = widoczneBoki.reduce((sum, b) => sum + (b.powierzchnia || 0), 0);
   const totalQuantity = widoczneBoki.reduce((sum, b) => sum + (parseFloat(b.ilość) || 0), 0);
@@ -44,7 +51,7 @@ const WidocznyBokTable = () => {
             </div>
             <div className="text-right">
                 <div className="text-3xl font-bold text-white">{totalQuantity}</div>
-                <div className="text-emerald-100 text-xs">boków w projekcie</div>
+                <div className="text-emerald-100 text-xs">sztuk w projekcie</div>
             </div>
         </div>
       </div>
@@ -69,8 +76,8 @@ const WidocznyBokTable = () => {
       <div className="bg-white/70 backdrop-blur-xl rounded-xl p-3 border border-white/20 shadow-md mb-6">
           <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                  <button onClick={handleAddWidocznyBok} className="group relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"><div className="relative flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /><span>Dodaj bok</span></div></button>
-                  <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm">{showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}<span>Kalkulacje</span></button>
+                  <button onClick={handleAddWidocznyBok} disabled={!isEditMode} className="group relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"><div className="relative flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /><span>Dodaj bok</span></div></button>
+                  <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm">{showAdvanced ? 'Ukryj' : 'Kalkulacje'}</button>
               </div>
           </div>
       </div>
@@ -79,21 +86,21 @@ const WidocznyBokTable = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-16 border border-white/20 shadow-lg text-center">{/* Empty State */}</div>
       ) : (
         <div className="space-y-4">
-          {widoczneBoki.map((bok, index) => <WidocznyBokCard key={bok.id} bok={bok} index={index} onUpdate={handleUpdateWidocznyBok} onRemove={handleRemoveWidocznyBok} showAdvanced={showAdvanced} frontyOptions={frontyOptions} formatPrice={formatPrice} formatSurface={formatSurface} />)}
+          {widoczneBoki.map((bok, index) => <WidocznyBokCard key={bok.id} bok={bok} index={index} onUpdate={handleUpdateWidocznyBok} onRemove={handleRemoveWidocznyBok} showAdvanced={showAdvanced} frontyOptions={frontyOptions} formatPrice={formatPrice} formatSurface={formatSurface} isEditMode={isEditMode} />)}
         </div>
       )}
       {widoczneBoki.length  > 0 &&
         <div className="pt-2">
-          <button onClick={handleAddWidocznyBok} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200">
+          <button onClick={handleAddWidocznyBok} disabled={!isEditMode} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus size={16} />
-            <span className="text-sm font-semibold">Dodaj nowy widoczny bok poniżej</span>
+            <span className="text-sm font-semibold">Dodaj nowy widoczny bok</span>
           </button>
         </div> }
     </div>
   );
 };
 
-const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyOptions, formatPrice, formatSurface }) => {
+const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyOptions, formatPrice, formatSurface, isEditMode }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -104,7 +111,6 @@ const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyO
                 <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">{index + 1}</div>
                 <div>
                     <h3 className="font-semibold text-gray-900">Widoczny Bok #{index + 1}</h3>
-                    {/* ✅ ZMIANA: Dodano wyświetlanie materiału w jednej linii z wymiarami */}
                     <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
                         <span>{bok.szerokość && bok.wysokość ? `${bok.szerokość}×${bok.wysokość} mm (${bok.ilość} szt)` : 'Uzupełnij wymiary'}</span>
                         {bok.rodzaj && (
@@ -125,7 +131,7 @@ const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyO
                     <div className="text-xs text-gray-500">{formatSurface(bok.powierzchnia)} m²</div>
                 </div>
                 <button onClick={() => setIsExpanded(!isExpanded)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">{isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}</button>
-                <button onClick={() => onRemove(bok.id)} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => onRemove(bok.id)} disabled={!isEditMode} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"><Trash2 className="w-4 h-4" /></button>
             </div>
         </div>
       </div>
@@ -133,20 +139,20 @@ const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyO
         <div className="p-4 space-y-4 bg-gray-50/50">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-3">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Rodzaj Frontu</label>
-                    <select value={bok.rodzaj} onChange={(e) => onUpdate(bok.id, 'rodzaj', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm">{frontyOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}</select>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Rodzaj Materiału</label>
+                    <select value={bok.rodzaj} onChange={(e) => onUpdate(bok.id, 'rodzaj', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm disabled:bg-gray-100 disabled:cursor-not-allowed">{frontyOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}</select>
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Szerokość [mm]</label>
-                    <input type="number" value={bok.szerokość} onChange={(e) => onUpdate(bok.id, 'szerokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm" placeholder="600" />
+                    <input type="number" value={bok.szerokość} onChange={(e) => onUpdate(bok.id, 'szerokość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="600" />
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Wysokość [mm]</label>
-                    <input type="number" value={bok.wysokość} onChange={(e) => onUpdate(bok.id, 'wysokość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm" placeholder="720" />
+                    <input type="number" value={bok.wysokość} onChange={(e) => onUpdate(bok.id, 'wysokość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="720" />
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Ilość [szt]</label>
-                    <input type="number" value={bok.ilość} onChange={(e) => onUpdate(bok.id, 'ilość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm" placeholder="1" min="1" />
+                    <input type="number" value={bok.ilość} onChange={(e) => onUpdate(bok.id, 'ilość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="1" min="1" />
                 </div>
             </div>
             {showAdvanced && (
