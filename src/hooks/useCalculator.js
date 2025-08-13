@@ -26,6 +26,7 @@ export const useCalculator = () => {
     const wys = parseNum(korpus.wysokość);
     const głęb = parseNum(korpus.głębokość);
     const półki = parseNum(korpus.ilośćPółek);
+    const podziałFrontu = parseNum(korpus.podziałFrontu) || 1;
 
     if (szer <= 0 || wys <= 0 || głęb <= 0 || !korpus.plytyKorpus) {
       return {
@@ -38,7 +39,8 @@ export const useCalculator = () => {
         cenaPółki: 0,
         cenaFront: 0,
         cenaTył: 0,
-        cenaOkleina: 0,
+        cenaOkleinaKorpus: 0,
+        cenaOkleinaFront: 0, 
         cenaCałość: 0
       };
     }
@@ -48,14 +50,19 @@ export const useCalculator = () => {
     const powierzchniaPółek = (półki * szer * głęb) / 1000000;
     const powierzchniaFront = (szer * wys) / 1000000;
     const powierzchniaTył = (szer * wys) / 1000000;
-    const okleinaMetry = ((szer + wys) * 2) / 1000;
+     const okleinaKorpusMetry = ((2 * wys) + (2 * szer) + (półki * szer)) / 1000;
+    // ✅ NOWOŚĆ 2: Opcjonalna kalkulacja dla okleiny frontu
+    const okleinaFrontMetry = korpus.okleinaFront && korpus.okleinaFront !== '-- BRAK OKLEINY --' 
+      ? ((2 * podziałFrontu * szer) + (2 * wys)) / 1000 
+      : 0;
 
     // CENY MATERIAŁÓW
     const cenaPlytaKorpus = getItemPrice('plytyMeblowe', korpus.plytyKorpus);
     const cenaPlytaFront = korpus.plytyFront === '<< JAK PŁYTA KORPUS' 
       ? cenaPlytaKorpus 
       : getItemPrice('fronty', korpus.plytyFront);
-    const cenaOkleinaZaMetr = getItemPrice('okleina', korpus.okleina);
+    const cenaOkleinaKorpusZaMetr = getItemPrice('okleina', korpus.okleina);
+    const cenaOkleinaFrontZaMetr = getItemPrice('okleina', korpus.okleinaFront);
     const cenaTylHdf = getItemPrice('tylHdf', 'HDF');
 
     // KALKULACJE CEN
@@ -63,22 +70,27 @@ export const useCalculator = () => {
     const cenaPółki = powierzchniaPółek * cenaPlytaKorpus;
     const cenaFront = korpus.plytyFront === '-- BRAK FRONTU --' ? 0 : powierzchniaFront * cenaPlytaFront;
     const cenaTył = powierzchniaTył * cenaTylHdf;
-    const cenaOkleina = okleinaMetry * cenaOkleinaZaMetr;
+    const cenaOkleinaKorpus = okleinaKorpusMetry * cenaOkleinaKorpusZaMetr;
+    const cenaOkleinaFront = okleinaFrontMetry * cenaOkleinaFrontZaMetr;
     
-    const cenaCałość = cenaKorpus + cenaPółki + cenaFront + cenaTył + cenaOkleina;
+    const cenaCałość = cenaKorpus + cenaPółki + cenaFront + cenaTył + cenaOkleinaKorpus + cenaOkleinaFront;
+
 
     return {
       powierzchniaKorpus: parseNum(powierzchniaKorpus),
       powierzchniaPółek: parseNum(powierzchniaPółek),
       powierzchniaFront: parseNum(powierzchniaFront),
       powierzchniaTył: parseNum(powierzchniaTył),
-      okleinaMetry: parseNum(okleinaMetry),
+      okleinaKorpusMetry: parseNum(okleinaKorpusMetry),
+      okleinaFrontMetry: parseNum(okleinaFrontMetry),
       cenaKorpus: parseNum(cenaKorpus),
       cenaPółki: parseNum(cenaPółki),
       cenaFront: parseNum(cenaFront),
       cenaTył: parseNum(cenaTył),
-      cenaOkleina: parseNum(cenaOkleina),
-      cenaCałość: parseNum(cenaCałość)
+      cenaOkleinaKorpus: parseNum(cenaOkleinaKorpus),
+      cenaOkleinaFront: parseNum(cenaOkleinaFront),
+      cenaCałość: parseNum(cenaCałość),
+      podziałFrontu: parseNum(podziałFrontu),
     };
   };
 

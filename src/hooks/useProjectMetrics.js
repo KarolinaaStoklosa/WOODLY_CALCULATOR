@@ -19,6 +19,28 @@ export const useProjectMetrics = () => {
     // --- METRYKI ILOŚCIOWE ---
     const iloscSzafek = szafki.length;
 
+       const iloscFormatekCNC = 
+      // 1. Formatki na każdy korpus (boki, góra, dół)
+      (szafki.length * 4) + 
+      
+      // 2. Formatki na fronty (z uwzględnieniem podziału)
+      szafki.reduce((sum, szafka) => {
+        if (szafka.plytyFront && szafka.plytyFront !== '-- BRAK FRONTU --') {
+          return sum + (parseInt(szafka.podziałFrontu) || 1);
+        }
+        return sum;
+      }, 0) +
+
+      // 3. Formatki na PÓŁKI (brakujący element)
+      szafki.reduce((sum, szafka) => {
+        return sum + (parseInt(szafka.ilośćPółek) || 0);
+      }, 0) +
+      
+      // 4. Formatki na WIDOCZNE BOKI (poprawiona logika)
+      widoczneBoki.reduce((sum, bok) => {
+        return sum + (parseInt(bok.ilość) || 0);
+      }, 0);
+
     // Zliczanie ilości blatów (tylko produkty)
     const iloscBlatow = blaty.reduce((sum, blat) => {
       const blatInfo = getItemByName('blaty', blat.rodzaj);
@@ -55,6 +77,7 @@ export const useProjectMetrics = () => {
     // Zwracamy czysty obiekt z obliczonymi metrykami
     return {
       iloscSzafek,
+      iloscFormatekCNC,
       powierzchniaPlytMeblowych,
       powierzchniaFrontow,
       powierzchniaBokowWidocznych,

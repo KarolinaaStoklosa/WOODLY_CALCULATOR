@@ -81,7 +81,14 @@ const BlatyTable = () => {
           {blaty.map((blat, index) => <BlatCard key={blat.id} blat={blat} index={index} onUpdate={handleUpdateBlat} onRemove={handleRemoveBlat} showAdvanced={showAdvanced} blatyOptions={blatyOptions} formatPrice={formatPrice} />)}
         </div>
       )}
-      {blaty.length > 0 && <div className="mt-8 bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-md">{/* Help Section */}</div>}
+    
+      {blaty.length  > 0 &&
+        <div className="pt-2">
+          <button onClick={handleAddBlat} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200">
+            <Plus size={16} />
+            <span className="text-sm font-semibold">Dodaj nowy blat poniżej</span>
+          </button>
+        </div> }
     </div>
   );
 };

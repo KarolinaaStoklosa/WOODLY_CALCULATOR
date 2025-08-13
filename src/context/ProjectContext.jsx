@@ -4,6 +4,8 @@ import { doc, setDoc, onSnapshot, serverTimestamp, collection, addDoc, deleteDoc
 import { useAuth } from './AuthContext';
 import { useCalculator } from '../hooks/useCalculator';
 import { useMaterials } from './MaterialContext';
+import { useProjectMetrics } from '../hooks/useProjectMetrics'; // Dodaj ten import
+
 
 const ProjectContext = createContext();
 
@@ -45,6 +47,7 @@ export const ProjectProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const { materials } = useMaterials();
   const { calculateProjectTotal } = useCalculator(materials);
+  const { calculateAggregatedMetrics } = useProjectMetrics();
 
   const [projectData, setProjectData] = useState(null);
   const [calculations, setCalculations] = useState(defaultCalculations);
@@ -60,8 +63,23 @@ export const ProjectProvider = ({ children }) => {
   const updateSectionData = useCallback((sectionName, data) => setCalculations(prev => ({ ...prev, [sectionName]: data })), []);
   const updateSettings = useCallback((newSettings) => setSettings(prev => ({ ...prev, ...newSettings })), []);
 
-  const recalculateAllTotals = useCallback(() => {
+    const recalculateAllTotals = useCallback(() => {
     const getNum = (val) => val ?? 0;
+    
+    // Obliczamy metryki na samym początku, aby mieć je dostępne
+    const metrics = calculateAggregatedMetrics(calculations);
+
+    // ✅ POPRAWKA: Synchronizujemy ilość CNC w stanie `settings` z obliczoną metryką
+    const cncService = (settings.serviceItems || []).find(item => item.name === 'PUNKT WIERCENIA CNC');
+    if (cncService && cncService.quantity !== metrics.iloscFormatekCNC) {
+        const updatedServices = settings.serviceItems.map(item =>
+            item.name === 'PUNKT WIERCENIA CNC' ? { ...item, quantity: metrics.iloscFormatekCNC } : item
+        );
+        // Aktualizujemy stan i przerywamy, funkcja odpali się ponownie z poprawnymi danymi
+        updateSettings({ serviceItems: updatedServices });
+        return; 
+    }
+
     const { grandTotal, sectionTotals } = calculateProjectTotal(calculations);
     const materialsTotal = getNum(grandTotal);
     const szafki = calculations?.szafki || [];
@@ -81,7 +99,12 @@ export const ProjectProvider = ({ children }) => {
     const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
     const transportCost = settings.transport?.active ? (getNum(settings.transport.distance) * getNum(settings.transport.pricePerKm)) : 0;
     const projectCost = settings.projectTypeActive ? getNum(settings.projectTypePrice) : 0;
-    const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => sum + (getNum(item.pricePerUnit) * getNum(item.quantity)), 0);
+    
+    // Teraz koszt usług jest liczony na podstawie zsynchronizowanego stanu `settings`
+    const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => {
+      return sum + (getNum(item.pricePerUnit) * getNum(item.quantity));
+    }, 0);
+    
     const stalaWartoscDoSzafek = settings.doliczone?.stalaWartoscDoSzafek;
     const plytaNaDnoSzuflady = settings.doliczone?.plytaNaDnoSzuflady;
     const doliczoneCost = (stalaWartoscDoSzafek?.active ? getNum(stalaWartoscDoSzafek.price) * szafki.length : 0) + (plytaNaDnoSzuflady?.active ? getNum(plytaNaDnoSzuflady.surfacePerDrawer) * szuflady.length * getNum(plytaNaDnoSzuflady.pricePerM2) : 0);
@@ -100,7 +123,8 @@ export const ProjectProvider = ({ children }) => {
     const grossTotal = finalNetTotal + vatAmount;
 
     setTotals({ materialsTotal, additionalTotal, subtotal, marginAmount, netTotal, vatAmount, grossTotal, wasteDetails, hdfCost, transportCost, projectCost, servicesCost, doliczoneCost, sectionTotals, nonMarginableTotal });
-  }, [calculations, settings, calculateProjectTotal, materials]);
+  }, [calculations, settings, calculateProjectTotal, materials, calculateAggregatedMetrics, updateSettings]);
+
 
   const setProjectDataWithDefaults = useCallback((data) => {
     if (!data.offerNumber) {

@@ -82,7 +82,13 @@ const WidocznyBokTable = () => {
           {widoczneBoki.map((bok, index) => <WidocznyBokCard key={bok.id} bok={bok} index={index} onUpdate={handleUpdateWidocznyBok} onRemove={handleRemoveWidocznyBok} showAdvanced={showAdvanced} frontyOptions={frontyOptions} formatPrice={formatPrice} formatSurface={formatSurface} />)}
         </div>
       )}
-      {widoczneBoki.length > 0 && <div className="mt-8 bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-md">{/* Help Section */}</div>}
+      {widoczneBoki.length  > 0 &&
+        <div className="pt-2">
+          <button onClick={handleAddWidocznyBok} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200">
+            <Plus size={16} />
+            <span className="text-sm font-semibold">Dodaj nowy widoczny bok poniżej</span>
+          </button>
+        </div> }
     </div>
   );
 };
@@ -98,7 +104,19 @@ const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyO
                 <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">{index + 1}</div>
                 <div>
                     <h3 className="font-semibold text-gray-900">Widoczny Bok #{index + 1}</h3>
-                    <p className="text-xs text-gray-500">{bok.szerokość && bok.wysokość ? `${bok.szerokość}×${bok.wysokość} mm (${bok.ilość} szt)` : 'Uzupełnij wymiary'}</p>
+                    {/* ✅ ZMIANA: Dodano wyświetlanie materiału w jednej linii z wymiarami */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
+                        <span>{bok.szerokość && bok.wysokość ? `${bok.szerokość}×${bok.wysokość} mm (${bok.ilość} szt)` : 'Uzupełnij wymiary'}</span>
+                        {bok.rodzaj && (
+                            <>
+                                <span className="text-gray-300 hidden md:inline">|</span>
+                                <span className="flex items-center gap-1.5" title={bok.rodzaj}>
+                                    <Layers size={12} className="flex-shrink-0 text-gray-400" />
+                                    <span className="truncate max-w-[150px]">{bok.rodzaj}</span>
+                                </span>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
             <div className="flex items-center gap-2">

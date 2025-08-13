@@ -23,10 +23,12 @@ const KorpusyTable = () => {
       plytyKorpus: plytyKorpusOptions[0]?.nazwa || '',
       plytyFront: plytyFrontOptions[0]?.nazwa || '',
       okleina: okleinaOptions[0]?.nazwa || '',
+      okleinaFront: '-- BRAK OKLEINY --',
       szerokość: '',
       wysokość: '',
       głębokość: '',
       ilośćPółek: '0',
+      podziałFrontu: 1,
       powierzchniaKorpus: 0,
       powierzchniaPółek: 0,
       powierzchniaFront: 0,
@@ -36,7 +38,8 @@ const KorpusyTable = () => {
       cenaPółki: 0,
       cenaFront: 0,
       cenaTył: 0,
-      cenaOkleina: 0,
+      cenaOkleinaKorpus: 0,
+      cenaOkleinaFront:0,
       cenaCałość: 0
     };
     addItem(newKorpus);
@@ -51,7 +54,7 @@ const KorpusyTable = () => {
     removeItem(id);
   };
 
-  useEffect(() => {
+ useEffect(() => {
     korpusy.forEach(korpus => {
       const calculated = calculateKorpus(korpus);
       const hasChanges = Object.keys(calculated).some(key => korpus[key] !== calculated[key]);
@@ -59,14 +62,15 @@ const KorpusyTable = () => {
         updateItem(korpus.id, calculated);
       }
     });
-  }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}`).join('|')]);
-
+    // ✅ ZMIANA: Dodajemy `podziałFrontu` do zależności
+  }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.okleinaFront}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}-${k.podziałFrontu}`).join('|')]);
+  
+ 
   const totalPowierzchniaKorpusyPolki = korpusy.reduce((sum, k) => sum + (k.powierzchniaKorpus || 0) + (k.powierzchniaPółek || 0), 0);
   const totalPowierzchniaFronty = korpusy.reduce((sum, k) => sum + (k.powierzchniaFront || 0), 0);
   const totalCenaKorpusyPolki = korpusy.reduce((sum, k) => sum + (k.cenaKorpus || 0) + (k.cenaPółki || 0), 0);
   const totalCenaFronty = korpusy.reduce((sum, k) => sum + (k.cenaFront || 0), 0);
   const totalSurface = totalPowierzchniaKorpusyPolki + totalPowierzchniaFronty;
-
 
    return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
@@ -227,6 +231,16 @@ const KorpusyTable = () => {
         </div>
       )}
 
+      <div className="pt-2">
+            <button
+              onClick={handleAddKorpus}
+              className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200"
+            >
+              <Plus size={16} />
+              <span className="text-sm font-semibold">Dodaj nowy korpus poniżej</span>
+            </button>
+          </div>
+
       {/* 📚 HELP SECTION */}
       {korpusy.length > 0 && (
         <div className="mt-12 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-200">
@@ -293,12 +307,32 @@ const KorpusCard = ({
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
-              {index + 1}
-            </div>
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">{index + 1}</div>
             <div>
               <h3 className="font-semibold text-gray-900">Korpus #{index + 1}</h3>
-              <p className="text-xs text-gray-500">{korpus.szerokość}×{korpus.wysokość}×{korpus.głębokość} mm</p>
+              {/* ✅ ZMIANA: Wymiary i materiały w jednej, kompaktowej linii */}
+              <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
+                <span>{korpus.szerokość || '...'}×{korpus.wysokość || '...'}×{korpus.głębokość || '...'} mm</span>
+                
+                <span className="text-gray-300 hidden md:inline">|</span>
+                
+                <span className="flex items-center gap-1.5" title={korpus.plytyKorpus}>
+                  <Box size={12} className="flex-shrink-0 text-gray-400" />
+                  <span className="truncate max-w-[120px]">{korpus.plytyKorpus || 'Brak'}</span>
+                </span>
+
+                {korpus.plytyFront && korpus.plytyFront !== '-- BRAK FRONTU --' && (
+                  <>
+                    <span className="text-gray-300 hidden md:inline">|</span>
+                    <span className="flex items-center gap-1.5" title={korpus.plytyFront}>
+                      <Square size={12} className="flex-shrink-0 text-gray-400" />
+                      <span className="truncate max-w-[120px]">
+                        {korpus.plytyFront === '<< JAK PŁYTA KORPUS' ? korpus.plytyKorpus : korpus.plytyFront}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -313,30 +347,48 @@ const KorpusCard = ({
       </div>
       
       {isExpanded && (
-        <div className="p-4 space-y-4 bg-gray-50/50">
+        <div className="p-4 space-y-3 bg-gray-50/50">
           
-          {/* ✅ ZMIANA: Zmniejszono odstępy i rozmiary inputów */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* ✅ ZMIANA: Przebudowano układ pól edycji na bardziej logiczny, trzyliniowy system */}
+          
+          {/* Linia 1: Materiały Główne */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Płyta Korpus</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Materiał na Korpus</label>
               <select value={korpus.plytyKorpus} onChange={(e) => onUpdate(korpus.id, 'plytyKorpus', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 {plytyKorpusOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Płyta Front</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Materiał na Front</label>
               <select value={korpus.plytyFront} onChange={(e) => onUpdate(korpus.id, 'plytyFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 {plytyFrontOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
+          </div>
+
+          {/* Linia 2: Okleiny i Podział Frontu */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Okleina</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Okleina Korpusu</label>
               <select value={korpus.okleina} onChange={(e) => onUpdate(korpus.id, 'okleina', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                 {okleinaOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Okleina Frontu</label>
+              <select value={korpus.okleinaFront || '-- BRAK OKLEINY --'} onChange={(e) => onUpdate(korpus.id, 'okleinaFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" disabled={korpus.plytyFront === '-- BRAK FRONTU --'}>
+                <option value="-- BRAK OKLEINY --">-- BRAK OKLEINY --</option>
+                {okleinaOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Podział frontu (szt)</label>
+              <input type="number" value={korpus.podziałFrontu || 1} onChange={(e) => onUpdate(korpus.id, 'podziałFrontu', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="1" min="1" disabled={korpus.plytyFront === '-- BRAK FRONTU --'}/>
+            </div>
           </div>
 
+          {/* Linia 3: Wymiary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Szer. [mm]</label>
@@ -356,10 +408,12 @@ const KorpusCard = ({
             </div>
           </div>
 
+          
           {showAdvanced && (
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h4 className="font-semibold text-gray-900 mb-4">📊 Szczegółowe kalkulacje</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              {/* ✅ ZMIANA: Poprawione wyświetlanie rozdzielonych kosztów okleiny */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-2xl mb-1">📦</div>
                   <div className="font-semibold text-blue-600">{formatSurface(korpus.powierzchniaKorpus)} m²</div>
@@ -380,10 +434,18 @@ const KorpusCard = ({
                 </div>
                 <div className="text-center p-3 bg-orange-50 rounded-lg">
                   <div className="text-2xl mb-1">🔗</div>
-                  <div className="font-semibold text-orange-600">{formatSurface(korpus.okleinaMetry, 2)} m</div>
-                  <div className="text-gray-600">Okleina</div>
-                  <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaOkleina)} zł</div>
+                  <div className="font-semibold text-orange-600">{korpus.okleinaKorpusMetry?.toFixed(2)} m</div>
+                  <div className="text-gray-600">Okleina Korp.</div>
+                  <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaOkleinaKorpus)} zł</div>
                 </div>
+                {korpus.okleinaFrontMetry > 0 && (
+                  <div className="text-center p-3 bg-orange-50 rounded-lg">
+                    <div className="text-2xl mb-1">🔗</div>
+                    <div className="font-semibold text-orange-600">{korpus.okleinaFrontMetry?.toFixed(2)} m</div>
+                    <div className="text-gray-600">Okleina Fr.</div>
+                    <div className="text-xs text-gray-500 mt-1">{formatPrice(korpus.cenaOkleinaFront)} zł</div>
+                  </div>
+                )}
               </div>
             </div>
           )}
