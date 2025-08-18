@@ -20,26 +20,17 @@ export const useProjectMetrics = () => {
     const iloscSzafek = szafki.length;
 
        const iloscFormatekCNC = 
-      // 1. Formatki na każdy korpus (boki, góra, dół)
-      (szafki.length * 4) + 
-      
-      // 2. Formatki na fronty (z uwzględnieniem podziału)
       szafki.reduce((sum, szafka) => {
-        if (szafka.plytyFront && szafka.plytyFront !== '-- BRAK FRONTU --') {
-          return sum + (parseInt(szafka.podziałFrontu) || 1);
-        }
-        return sum;
+        const ilośćSztuk = parseInt(szafka.ilośćSztuk) || 1;
+        const formatkiKorpusu = 4 * ilośćSztuk;
+        const formatkiFrontu = (szafka.plytyFront && szafka.plytyFront !== '-- BRAK FRONTU --') 
+          ? (parseInt(szafka.podziałFrontu) || 1) * ilośćSztuk 
+          : 0;
+        const formatkiPółek = (parseInt(szafka.ilośćPółek) || 0) * ilośćSztuk;
+        return sum + formatkiKorpusu + formatkiFrontu + formatkiPółek;
       }, 0) +
-
-      // 3. Formatki na PÓŁKI (brakujący element)
-      szafki.reduce((sum, szafka) => {
-        return sum + (parseInt(szafka.ilośćPółek) || 0);
-      }, 0) +
+      widoczneBoki.reduce((sum, bok) => sum + (parseInt(bok.ilość) || 0), 0);
       
-      // 4. Formatki na WIDOCZNE BOKI (poprawiona logika)
-      widoczneBoki.reduce((sum, bok) => {
-        return sum + (parseInt(bok.ilość) || 0);
-      }, 0);
 
     // Zliczanie ilości blatów (tylko produkty)
     const iloscBlatow = blaty.reduce((sum, blat) => {
@@ -75,8 +66,8 @@ export const useProjectMetrics = () => {
     }, 0);
 
     // Zwracamy czysty obiekt z obliczonymi metrykami
-    return {
-      iloscSzafek,
+     return {
+      iloscSzafek: szafki.reduce((sum, szafka) => sum + (parseInt(szafka.ilośćSztuk) || 1), 0),
       iloscFormatekCNC,
       powierzchniaPlytMeblowych,
       powierzchniaFrontow,

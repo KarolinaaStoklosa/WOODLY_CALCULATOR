@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useProjectSection, useProject } from '../../context/ProjectContext';
 import { useCalculator } from '../../hooks/useCalculator';
-import { useMaterials } from '../../context/MaterialContext'; // 1. Importujemy nowy hook
+import { useMaterials } from '../../context/MaterialContext';
 
 
 const KorpusyTable = () => {
@@ -19,22 +19,28 @@ const KorpusyTable = () => {
   const [animationKey, setAnimationKey] = useState(0);
   const { isEditMode } = useProject();
 
+  // ✅ ZMIANA: Inteligentne dodawanie z dziedziczeniem materiałów i nowymi polami
   const handleAddKorpus = () => {
+    const lastKorpus = korpusy.length > 0 ? korpusy[korpusy.length - 1] : {};
+    
     const newKorpus = {
-      plytyKorpus: plytyKorpusOptions[0]?.nazwa || '',
-      plytyFront: plytyFrontOptions[0]?.nazwa || '',
-      okleina: okleinaOptions[0]?.nazwa || '',
-      okleinaFront: '-- BRAK OKLEINY --',
+      id: Date.now() + Math.random(),
+      plytyKorpus: lastKorpus.plytyKorpus || plytyKorpusOptions[0]?.nazwa || '',
+      plytyFront: lastKorpus.plytyFront || plytyFrontOptions[0]?.nazwa || '',
+      okleina: lastKorpus.okleina || okleinaOptions[0]?.nazwa || '',
+      okleinaFront: lastKorpus.okleinaFront || '-- BRAK OKLEINY --',
+      ilośćSztuk: 1,
+      podziałFrontu: 1,
       szerokość: '',
       wysokość: '',
       głębokość: '',
       ilośćPółek: '0',
-      podziałFrontu: 1,
       powierzchniaKorpus: 0,
       powierzchniaPółek: 0,
       powierzchniaFront: 0,
       powierzchniaTył: 0,
-      okleinaMetry: 0,
+      okleinaKorpusMetry: 0,
+      okleinaFrontMetry: 0,
       cenaKorpus: 0,
       cenaPółki: 0,
       cenaFront: 0,
@@ -63,10 +69,12 @@ const KorpusyTable = () => {
         updateItem(korpus.id, calculated);
       }
     });
-    // ✅ ZMIANA: Dodajemy `podziałFrontu` do zależności
-  }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.okleinaFront}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}-${k.podziałFrontu}`).join('|')]);
+    // ✅ ZMIANA: Dodano `ilośćSztuk` do zależności
+  }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.okleinaFront}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}-${k.podziałFrontu}-${k.ilośćSztuk}`).join('|')]);
   
- 
+  // ✅ ZMIANA: Obliczamy całkowitą liczbę szafek (uwzględniając ilość sztuk)
+  const totalSzafki = korpusy.reduce((sum, k) => sum + (parseInt(k.ilośćSztuk) || 1), 0);
+
   const totalPowierzchniaKorpusyPolki = korpusy.reduce((sum, k) => sum + (k.powierzchniaKorpus || 0) + (k.powierzchniaPółek || 0), 0);
   const totalPowierzchniaFronty = korpusy.reduce((sum, k) => sum + (k.powierzchniaFront || 0), 0);
   const totalCenaKorpusyPolki = korpusy.reduce((sum, k) => sum + (k.cenaKorpus || 0) + (k.cenaPółki || 0), 0);
@@ -76,7 +84,6 @@ const KorpusyTable = () => {
    return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
       
-      {/* ✅ ZMIANA: Jeszcze bardziej kompaktowy Hero Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-4 mb-4 shadow-lg">
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -84,137 +91,76 @@ const KorpusyTable = () => {
               <span className="text-xl">📦</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">
-                Korpusy & Szafki
-              </h1>
-              <p className="text-blue-100 text-sm opacity-90">
-                Kalkulacja powierzchni i kosztów
-              </p>
+              <h1 className="text-xl font-bold text-white">Korpusy & Szafki</h1>
+              <p className="text-blue-100 text-sm opacity-90">Kalkulacja powierzchni i kosztów</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-white">
-              {korpusy.length}
-            </div>
-            <div className="text-blue-100 text-xs">korpusów w projekcie</div>
+            {/* ✅ ZMIANA: Wyświetlamy całkowitą liczbę szafek */}
+            <div className="text-3xl font-bold text-white">{totalSzafki}</div>
+            <div className="text-blue-100 text-xs">szafek w projekcie</div>
           </div>
         </div>
       </div>
 
-      {/* ✅ ZMIANA: Bardziej kompaktowe statystyki */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-md">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <Box className="w-4 h-4 text-white" />
-            </div>
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"><Box className="w-4 h-4 text-white" /></div>
             <span className="font-semibold text-sm text-gray-700">Korpusy i półki</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {formatSurface(totalPowierzchniaKorpusyPolki)} m²
-          </div>
-          <div className="text-base font-semibold text-blue-700">
-            {formatPrice(totalCenaKorpusyPolki)} zł
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{formatSurface(totalPowierzchniaKorpusyPolki)} m²</div>
+          <div className="text-base font-semibold text-blue-700">{formatPrice(totalCenaKorpusyPolki)} zł</div>
         </div>
         <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-md">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-              <Square className="w-4 h-4 text-white" />
-            </div>
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center"><Square className="w-4 h-4 text-white" /></div>
              <span className="font-semibold text-sm text-gray-700">Fronty</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {formatSurface(totalPowierzchniaFronty)} m²
-          </div>
-           <div className="text-base font-semibold text-purple-700">
-            {formatPrice(totalCenaFronty)} zł
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{formatSurface(totalPowierzchniaFronty)} m²</div>
+           <div className="text-base font-semibold text-purple-700">{formatPrice(totalCenaFronty)} zł</div>
         </div>
         <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-md">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-white" />
-            </div>
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center"><TrendingUp className="w-4 h-4 text-white" /></div>
             <span className="font-semibold text-sm text-gray-700">Wartość sekcji</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {formatPrice(total)} zł
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{formatPrice(total)} zł</div>
         </div>
         <div className="bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-white/20 shadow-md">
            <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
+            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center"><Zap className="w-4 h-4 text-white" /></div>
             <span className="font-semibold text-sm text-gray-700">Koszt za m²</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {totalSurface > 0 ? formatPrice(total / totalSurface) : '0.00'} zł
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{totalSurface > 0 ? formatPrice(total / totalSurface) : '0.00'} zł</div>
         </div>
       </div>
 
-      {/* ✅ ZMIANA: Bardziej kompaktowy pasek z przyciskami */}
       <div className="bg-white/70 backdrop-blur-xl rounded-xl p-3 border border-white/20 shadow-md mb-6">
          <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleAddKorpus()}
-              // ✅ ZMIANA 2: Blokujemy główny przycisk dodawania
-              disabled={!isEditMode}
-              className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
+            <button onClick={handleAddKorpus} disabled={!isEditMode} className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center gap-2 text-sm">
-                <Plus className="w-4 h-4" />
-                <span>Dodaj korpus</span>
-              </div>
+              <div className="relative flex items-center gap-2 text-sm"><Plus className="w-4 h-4" /><span>Dodaj korpus</span></div>
             </button>
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm"
-            >
-              {showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              <span>Kalkulacje</span>
-            </button>
+            <button onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 text-sm">{showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}<span>Kalkulacje</span></button>
           </div>
         </div>
       </div>
 
-      {/* 📋 KORPUSY CONTENT */}
       {korpusy.length === 0 ? (
-        // EMPTY STATE - Nowoczesny design
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-16 border border-white/20 shadow-lg text-center">
           <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <span className="text-2xl">📦</span>
-            </div>
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center"><span className="text-2xl">📦</span></div>
           </div>
-          
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            Rozpocznij swój projekt
-          </h3>
-          
-          <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
-            Dodaj pierwszy korpus aby rozpocząć profesjonalną kalkulację. 
-            System automatycznie obliczy powierzchnie, materiały i koszty.
-          </p>
-          
-          <button
-            onClick={handleAddKorpus}
-            className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-          >
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Rozpocznij swój projekt</h3>
+          <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">Dodaj pierwszy korpus aby rozpocząć profesjonalną kalkulację. System automatycznie obliczy powierzchnie, materiały i koszty.</p>
+          <button onClick={handleAddKorpus} className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative flex items-center gap-3">
-              <Plus className="w-6 h-6" />
-              <span>Dodaj pierwszy korpus</span>
-              <Sparkles className="w-5 h-5 opacity-70" />
-            </div>
+            <div className="relative flex items-center gap-3"><Plus className="w-6 h-6" /><span>Dodaj pierwszy korpus</span><Sparkles className="w-5 h-5 opacity-70" /></div>
           </button>
         </div>
       ) : (
-        // KORPUSY LIST - Modern card design
         <div className="space-y-6" key={animationKey}>
           {korpusy.map((korpus, index) => (
             <KorpusCard
@@ -236,26 +182,17 @@ const KorpusyTable = () => {
       )}
 
       <div className="pt-2">
-            <button
-              onClick={handleAddKorpus}
-              className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200"
-            >
-              <Plus size={16} />
-              <span className="text-sm font-semibold">Dodaj nowy korpus poniżej</span>
-            </button>
-          </div>
+        <button onClick={handleAddKorpus} className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200">
+          <Plus size={16} /><span className="text-sm font-semibold">Dodaj nowy korpus poniżej</span>
+        </button>
+      </div>
 
-      {/* 📚 HELP SECTION */}
       {korpusy.length > 0 && (
         <div className="mt-12 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-200">
             <div className="flex items-start gap-4">
-             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Info className="w-6 h-6 text-amber-600" />
-            </div>
+             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0"><Info className="w-6 h-6 text-amber-600" /></div>
             <div>
-            <h4 className="text-xl font-semibold text-gray-900 mb-3">
-                💡 Jak interpretować kalkulacje?
-            </h4>
+            <h4 className="text-xl font-semibold text-gray-900 mb-3">💡 Jak interpretować kalkulacje?</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div>
                 <h5 className="font-semibold text-gray-800 mb-2">🏗️ Powierzchnie</h5>
@@ -291,7 +228,6 @@ const KorpusyTable = () => {
   );
 };
 
-// 🎨 KORPUS CARD COMPONENT - bez zmian (skopiowane z oryginału)
 const KorpusCard = ({ 
   korpus, 
   index, 
@@ -314,27 +250,18 @@ const KorpusCard = ({
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">{index + 1}</div>
             <div>
-              <h3 className="font-semibold text-gray-900">Korpus #{index + 1}</h3>
-              {/* ✅ ZMIANA: Wymiary i materiały w jednej, kompaktowej linii */}
+              <h3 className="font-semibold text-gray-900">
+                Korpus #{index + 1}
+                {(korpus.ilośćSztuk > 1) && <span className="ml-2 font-bold text-purple-600">(x{korpus.ilośćSztuk})</span>}
+              </h3>
               <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
                 <span>{korpus.szerokość || '...'}×{korpus.wysokość || '...'}×{korpus.głębokość || '...'} mm</span>
-                
                 <span className="text-gray-300 hidden md:inline">|</span>
-                
-                <span className="flex items-center gap-1.5" title={korpus.plytyKorpus}>
-                  <Box size={12} className="flex-shrink-0 text-gray-400" />
-                  <span className="truncate max-w-[120px]">{korpus.plytyKorpus || 'Brak'}</span>
-                </span>
-
+                <span className="flex items-center gap-1.5" title={korpus.plytyKorpus}><Box size={12} className="flex-shrink-0 text-gray-400" /><span className="truncate max-w-[120px]">{korpus.plytyKorpus || 'Brak'}</span></span>
                 {korpus.plytyFront && korpus.plytyFront !== '-- BRAK FRONTU --' && (
                   <>
                     <span className="text-gray-300 hidden md:inline">|</span>
-                    <span className="flex items-center gap-1.5" title={korpus.plytyFront}>
-                      <Square size={12} className="flex-shrink-0 text-gray-400" />
-                      <span className="truncate max-w-[120px]">
-                        {korpus.plytyFront === '<< JAK PŁYTA KORPUS' ? korpus.plytyKorpus : korpus.plytyFront}
-                      </span>
-                    </span>
+                    <span className="flex items-center gap-1.5" title={korpus.plytyFront}><Square size={12} className="flex-shrink-0 text-gray-400" /><span className="truncate max-w-[120px]">{korpus.plytyFront === '<< JAK PŁYTA KORPUS' ? korpus.plytyKorpus : korpus.plytyFront}</span></span>
                   </>
                 )}
               </div>
@@ -346,17 +273,13 @@ const KorpusCard = ({
               <div className="text-xs text-gray-500">{formatSurface((korpus.powierzchniaKorpus || 0) + (korpus.powierzchniaPółek || 0))} m²</div>
             </div>
             <button onClick={() => setIsExpanded(!isExpanded)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">{isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}</button>
-            <button onClick={() => onRemove(korpus.id)} disabled={!isEditMode} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => onRemove(korpus.id)} disabled={!isEditMode} className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"><Trash2 className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
       
       {isExpanded && (
         <div className="p-4 space-y-3 bg-gray-50/50">
-          
-          {/* ✅ ZMIANA: Przebudowano układ pól edycji na bardziej logiczny, trzyliniowy system */}
-          
-          {/* Linia 1: Materiały Główne */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Materiał na Korpus</label>
@@ -371,8 +294,6 @@ const KorpusCard = ({
               </select>
             </div>
           </div>
-
-          {/* Linia 2: Okleiny i Podział Frontu */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Okleina Korpusu</label>
@@ -392,9 +313,7 @@ const KorpusCard = ({
               <input type="number" value={korpus.podziałFrontu || 1} onChange={(e) => onUpdate(korpus.id, 'podziałFrontu', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="1" min="1" disabled={korpus.plytyFront === '-- BRAK FRONTU --' || !isEditMode}/>
             </div>
           </div>
-
-          {/* Linia 3: Wymiary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Szer. [mm]</label>
               <input type="number" value={korpus.szerokość} onChange={(e) => onUpdate(korpus.id, 'szerokość', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="600" />
@@ -411,13 +330,15 @@ const KorpusCard = ({
               <label className="block text-xs font-medium text-gray-600 mb-1">Półki [szt]</label>
               <input type="number" value={korpus.ilośćPółek} onChange={(e) => onUpdate(korpus.id, 'ilośćPółek', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" placeholder="2" min="0" />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Ilość sztuk</label>
+              <input type="number" value={korpus.ilośćSztuk || 1} onChange={(e) => onUpdate(korpus.id, 'ilośćSztuk', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-semibold" placeholder="1" min="1" />
+            </div>
           </div>
-
 
           {showAdvanced && (
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <h4 className="font-semibold text-gray-900 mb-4">📊 Szczegółowe kalkulacje</h4>
-              {/* ✅ ZMIANA: Poprawione wyświetlanie rozdzielonych kosztów okleiny */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-2xl mb-1">📦</div>
@@ -459,6 +380,5 @@ const KorpusCard = ({
     </div>
   );
 };
-
 
 export default KorpusyTable;

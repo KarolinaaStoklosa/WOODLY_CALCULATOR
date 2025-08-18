@@ -22,7 +22,8 @@ const defaultSettings = {
   serviceItems: [
     { id: 1, name: 'PUNKT WIERCENIA CNC', pricePerUnit: 16.00, quantity: 11, unit: 'szt', active: true },
     { id: 2, name: 'WIZJA LOKALNA I POMIAR', pricePerUnit: 100.00, quantity: 0, unit: 'godz', active: false },
-    { id: 3, name: 'MONTAŻ', pricePerUnit: 100.00, quantity: 0, unit: 'godz', active: false }
+    { id: 3, name: 'MONTAŻ', pricePerUnit: 100.00, quantity: 0, unit: 'godz', active: false },
+    { id: 4, name: 'RBH', pricePerUnit: 45.00, quantity: 0, unit: 'godz', active: false }
   ],
   doliczone: {
     stalaWartoscDoSzafek: { price: 35.00, active: true },
