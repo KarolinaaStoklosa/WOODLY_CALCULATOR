@@ -2,6 +2,20 @@ import React, { useState } from 'react';
 import { useMaterials } from '../../context/MaterialContext';
 import { Plus, Trash2, Edit, Loader2 } from 'lucide-react';
 
+const CATEGORY_NAMES = {
+  plytyMeblowe: "Płyty Meblowe",
+  okleina: "Okleina",
+  fronty: "Fronty",
+  tylHdf: "Tył HDF",
+  drzwiPrzesuwne: "Drzwi Przesuwne",
+  uchwyty: "Uchwyty",
+  zawiasy: "Zawiasy",
+  podnosniki: "Podnośniki",
+  szuflady: "Systemy Szuflad",
+  blaty: "Blaty i Usługi",
+  akcesoria: "Akcesoria Różne"
+};
+
 const MaterialsManager = () => {
   const { materials, updateMaterials, loading } = useMaterials();
   const [activeCategory, setActiveCategory] = useState('plytyMeblowe');
@@ -78,7 +92,7 @@ const MaterialsManager = () => {
                   onClick={() => setActiveCategory(catKey)}
                   className={`w-full text-left px-4 py-2 rounded-lg transition-colors text-sm font-medium ${activeCategory === catKey ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-600'}`}
                 >
-                  {catKey.charAt(0).toUpperCase() + catKey.slice(1).replace(/([A-Z])/g, ' $1')}
+                  {CATEGORY_NAMES[catKey] || catKey}
                 </button>
               </li>
             ))}
@@ -87,7 +101,7 @@ const MaterialsManager = () => {
 
         <div className="lg:col-span-3">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold capitalize">{activeCategory.replace(/([A-Z])/g, ' $1')}</h2>
+            <h2 className="text-xl font-semibold capitalize">{CATEGORY_NAMES[activeCategory] || activeCategory}</h2>
             <button onClick={handleAddItem} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               <Plus size={16} /> Dodaj Nowy
             </button>

@@ -27,6 +27,7 @@ const KorpusyTable = () => {
       id: Date.now() + Math.random(),
       plytyKorpus: lastKorpus.plytyKorpus || plytyKorpusOptions[0]?.nazwa || '',
       plytyFront: lastKorpus.plytyFront || plytyFrontOptions[0]?.nazwa || '',
+      tył: 'HDF',
       okleina: lastKorpus.okleina || okleinaOptions[0]?.nazwa || '',
       okleinaFront: lastKorpus.okleinaFront || '-- BRAK OKLEINY --',
       ilośćSztuk: 1,
@@ -61,7 +62,7 @@ const KorpusyTable = () => {
     removeItem(id);
   };
 
- useEffect(() => {
+useEffect(() => {
     korpusy.forEach(korpus => {
       const calculated = calculateKorpus(korpus);
       const hasChanges = Object.keys(calculated).some(key => korpus[key] !== calculated[key]);
@@ -69,8 +70,8 @@ const KorpusyTable = () => {
         updateItem(korpus.id, calculated);
       }
     });
-    // ✅ ZMIANA: Dodano `ilośćSztuk` do zależności
-  }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.okleinaFront}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}-${k.podziałFrontu}-${k.ilośćSztuk}`).join('|')]);
+    // ✅ ZMIANA: Dodano `tył` do zależności
+  }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.okleinaFront}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}-${k.podziałFrontu}-${k.ilośćSztuk}-${k.tył}`).join('|')]);
   
   // ✅ ZMIANA: Obliczamy całkowitą liczbę szafek (uwzględniając ilość sztuk)
   const totalSzafki = korpusy.reduce((sum, k) => sum + (parseInt(k.ilośćSztuk) || 1), 0);
@@ -293,6 +294,13 @@ const KorpusCard = ({
                 {plytyFrontOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Materiał na Tył</label>
+              <select value={korpus.tył || 'HDF'} onChange={(e) => onUpdate(korpus.id, 'tył', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                <option value="HDF" label='HDF'/>
+                <option value="Jak płyta korpusu" label='<< JAK PŁYTA KORPUS'/>
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -304,7 +312,6 @@ const KorpusCard = ({
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Okleina Frontu</label>
               <select value={korpus.okleinaFront || '-- BRAK OKLEINY --'} onChange={(e) => onUpdate(korpus.id, 'okleinaFront', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" disabled={korpus.plytyFront === '-- BRAK FRONTU --' || !isEditMode}>
-                <option value="-- BRAK OKLEINY --">-- BRAK OKLEINY --</option>
                 {okleinaOptions.map((option, idx) => (<option key={idx} value={option.nazwa}>{option.nazwa}</option>))}
               </select>
             </div>

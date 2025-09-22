@@ -32,7 +32,7 @@ export const DROPDOWN_DATA = {
   okleina: [
     { nazwa: "CIENKA", cena: 5.35, opis: "Okleina cienka - standardowa" },
     { nazwa: "GRUBA", cena: 9.05, opis: "Okleina gruba - wzmocniona" },
-    { nazwa: "BRAK", cena: 0.00, opis: "Bez okleiny" }
+    { nazwa: "--BRAK OKLEINY--", cena: 0.00, opis: "Bez okleiny" }
   ],
 
   // 🚪 FRONTY (dane z Excel kolumna L-N)

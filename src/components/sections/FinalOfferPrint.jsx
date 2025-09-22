@@ -111,7 +111,29 @@ const PrintableContent = React.forwardRef(({ companyData, clientData, totals, ac
             </div>
           </div>
         </div>
-        {companyData?.backgroundImage && (<div style={{ marginTop: '10mm', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', padding: 0, border: '1px solid #e2e8f0' }}><div style={{ background: '#2563eb', color: 'white', padding: '3mm', fontSize: '13px', fontWeight: 'bold' }}></div><img src={companyData.backgroundImage} alt="Realizacje" style={{ width: '100%', objectFit: 'cover' }} /></div>)}
+        {companyData?.backgroundImage && (
+          <div style={{ 
+            marginTop: '10mm', 
+            borderRadius: '8px', 
+            overflow: 'hidden', 
+            border: '1px solid #e2e8f0',
+            height: '120mm', // Stała wysokość kontenera
+            display: 'flex', 
+            flexDirection: 'column' 
+          }}>
+            <div style={{ background: '#2563eb', color: 'white', padding: '3mm', fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>
+            </div>
+            <img 
+              src={companyData.backgroundImage} 
+              alt="Realizacje" 
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                objectFit: 'cover'
+              }} 
+            />
+          </div>
+        )}
       </div>
 
       {/* --- STRONA 2 --- */}

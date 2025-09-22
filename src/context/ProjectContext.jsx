@@ -4,8 +4,7 @@ import { doc, setDoc, onSnapshot, serverTimestamp, collection, addDoc, deleteDoc
 import { useAuth } from './AuthContext';
 import { useCalculator } from '../hooks/useCalculator';
 import { useMaterials } from './MaterialContext';
-import { useProjectMetrics } from '../hooks/useProjectMetrics'; // Dodaj ten import
-
+import { useProjectMetrics } from '../hooks/useProjectMetrics';
 
 const ProjectContext = createContext();
 
@@ -55,7 +54,6 @@ export const ProjectProvider = ({ children }) => {
   const [settings, setSettings] = useState(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState('main');
-   // ✅ 1. Wprowadzamy stan do zarządzania trybem edycji
   const [isEditMode, setIsEditMode] = useState(false);
   const [totals, setTotals] = useState({
     materialsTotal: 0, additionalTotal: 0, subtotal: 0, marginAmount: 0, netTotal: 0,
@@ -63,22 +61,25 @@ export const ProjectProvider = ({ children }) => {
     projectCost: 0, servicesCost: 0, doliczoneCost: 0, sectionTotals: {}, nonMarginableTotal: 0
   });
 
-  const updateSectionData = useCallback((sectionName, data) => setCalculations(prev => ({ ...prev, [sectionName]: data })), []);
-  const updateSettings = useCallback((newSettings) => setSettings(prev => ({ ...prev, ...newSettings })), []);
+  const updateSectionData = useCallback((sectionName, data) => {
+    setCalculations(prev => ({ ...prev, [sectionName]: data }));
+    setIsEditMode(true);
+  }, []);
+  const updateSettings = useCallback((newSettings) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
+    setIsEditMode(true);
+  }, []);
 
     const recalculateAllTotals = useCallback(() => {
     const getNum = (val) => val ?? 0;
     
-    // Obliczamy metryki na samym początku, aby mieć je dostępne
     const metrics = calculateAggregatedMetrics(calculations);
 
-    // ✅ POPRAWKA: Synchronizujemy ilość CNC w stanie `settings` z obliczoną metryką
     const cncService = (settings.serviceItems || []).find(item => item.name === 'PUNKT WIERCENIA CNC');
     if (cncService && cncService.quantity !== metrics.iloscFormatekCNC) {
         const updatedServices = settings.serviceItems.map(item =>
             item.name === 'PUNKT WIERCENIA CNC' ? { ...item, quantity: metrics.iloscFormatekCNC } : item
         );
-        // Aktualizujemy stan i przerywamy, funkcja odpali się ponownie z poprawnymi danymi
         updateSettings({ serviceItems: updatedServices });
         return; 
     }
@@ -90,36 +91,37 @@ export const ProjectProvider = ({ children }) => {
     const korpusyCost = szafki.reduce((sum, item) => sum + getNum(item.cenaKorpus) + getNum(item.cenaPółki), 0);
     const frontyCost = szafki.reduce((sum, item) => sum + getNum(item.cenaFront), 0);
     const widocznyBokCost = (calculations?.widocznyBok || []).reduce((sum, item) => sum + getNum(item.cenaCałość), 0);
-    const tylSurface = szafki.reduce((sum, szafka) => sum + ((getNum(szafka.szerokość)) * (getNum(szafka.wysokość)) / 1000000), 0);
+    
+    const tylSurface = szafki
+      .filter(szafka => !szafka.tył || szafka.tył === 'HDF')
+      .reduce((sum, szafka) => sum + ((getNum(szafka.szerokość)) * (getNum(szafka.wysokość)) / 1000000), 0);
+
     const hdfPrice = materials.tylHdf?.[0]?.cena ?? 0;
     const hdfCost = (tylSurface * (1 + getNum(settings.wasteSettings?.tylHdf) / 100)) * hdfPrice;
     const wasteDetails = {
       korpusy: korpusyCost * (getNum(settings.wasteSettings?.korpusyPolki) / 100),
       fronty: frontyCost * (getNum(settings.wasteSettings?.fronty) / 100),
       frontyNaBok: widocznyBokCost * (getNum(settings.wasteSettings?.frontyNaBok) / 100),
-      hdf: hdfCost * (getNum(settings.wasteSettings?.tylHdf) / 100),
+      hdf: hdfCost * (getNum(settings.wasteSettings?.tylHdf) / 100), // Odpady HDF też są liczone od poprawnej powierzchni
     };
     const totalWasteCost = Object.values(wasteDetails).reduce((sum, val) => sum + val, 0);
     const transportCost = settings.transport?.active ? (getNum(settings.transport.distance) * getNum(settings.transport.pricePerKm)) : 0;
     const projectCost = settings.projectTypeActive ? getNum(settings.projectTypePrice) : 0;
     
-    // Teraz koszt usług jest liczony na podstawie zsynchronizowanego stanu `settings`
-    const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => {
-      return sum + (getNum(item.pricePerUnit) * getNum(item.quantity));
-    }, 0);
+    const servicesCost = (settings.serviceItems || []).filter(item => item.active).reduce((sum, item) => sum + (getNum(item.pricePerUnit) * getNum(item.quantity)), 0);
     
     const stalaWartoscDoSzafek = settings.doliczone?.stalaWartoscDoSzafek;
     const plytaNaDnoSzuflady = settings.doliczone?.plytaNaDnoSzuflady;
     const doliczoneCost = (stalaWartoscDoSzafek?.active ? getNum(stalaWartoscDoSzafek.price) * szafki.length : 0) + (plytaNaDnoSzuflady?.active ? getNum(plytaNaDnoSzuflady.surfacePerDrawer) * szuflady.length * getNum(plytaNaDnoSzuflady.pricePerM2) : 0);
-    const additionalTotal = transportCost + projectCost + servicesCost + doliczoneCost + totalWasteCost + hdfCost;
+    
+    // Koszt HDF jest już częścią `materialsTotal`. W kosztach dodatkowych uwzględniamy tylko odpady.
+    const additionalTotal = transportCost + projectCost + servicesCost + doliczoneCost + totalWasteCost;
     
     const subtotal = materialsTotal + additionalTotal;
     const marginAmount = subtotal * (getNum(settings.margin) / 100);
     const netTotal = subtotal + marginAmount;
     
-    const nonMarginableTotal = (settings.nonMarginableItems || []).filter(item => item.active).reduce((sum, item) => {
-        return sum + (subtotal * (getNum(item.percentage) / 100));
-    }, 0);
+    const nonMarginableTotal = (settings.nonMarginableItems || []).filter(item => item.active).reduce((sum, item) => sum + (subtotal * (getNum(item.percentage) / 100)), 0);
     
     const finalNetTotal = netTotal + nonMarginableTotal;
     const vatAmount = settings.showVAT ? (finalNetTotal * (getNum(settings.vatRate) / 100)) : 0;
@@ -130,39 +132,31 @@ export const ProjectProvider = ({ children }) => {
 
 
   const setProjectDataWithDefaults = useCallback((data) => {
-    if (!data.offerNumber) {
-        const date = new Date();
-        data.offerNumber = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}/${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
-    }
     setProjectData(data);
+    setIsEditMode(true);
   }, []);
 
   const resetProject = useCallback(async () => {
-    // 1. Czyścimy stan lokalny w aplikacji
     setIsEditMode(true); 
     setProjectData(null);
     setCalculations(defaultCalculations);
     setActiveProjectId('main');
     localStorage.removeItem('lastActiveProject');
 
-
-    // 2. Czyścimy projekt roboczy ('main') w bazie danych
     if (currentUser) {
       const mainProjectRef = doc(db, 'users', currentUser.uid, 'projects', 'main');
       try {
         await setDoc(mainProjectRef, {
           projectData: null,
           calculations: defaultCalculations,
-          // Ważne: Zapisujemy bieżące `settings`, aby nie utracić danych firmy!
           settings: settings, 
           lastSaved: serverTimestamp(),
         });
-        console.log("Projekt roboczy 'main' został wyczyszczony w bazie danych.");
       } catch (error) {
         console.error("Błąd podczas czyszczenia projektu roboczego w bazie:", error);
       }
     }
-  }, [currentUser, settings]); // Dodano zależności, aby funkcja miała dostęp do aktualnych danych
+  }, [currentUser, settings]);
 
 
   const createNewProject = useCallback(async (newProjectData) => {
@@ -181,12 +175,14 @@ export const ProjectProvider = ({ children }) => {
         lastSaved: serverTimestamp(),
       });
       setActiveProjectId(newDocRef.id);
+      setIsEditMode(true);
       return newDocRef.id;
     } catch (error) { console.error("Błąd tworzenia nowego projektu:", error); }
   }, [currentUser, settings]);
 
   const loadProject = useCallback((projectId) => {
-    setActiveProjectId(projectId)
+    setActiveProjectId(projectId);
+    setIsEditMode(false); // Po wczytaniu projektu wyłączamy tryb edycji
   }, []);
 
   const deleteProject = useCallback(async (projectId) => {
@@ -210,8 +206,7 @@ export const ProjectProvider = ({ children }) => {
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId);
     try {
       await setDoc(docRef, { projectData, calculations, settings, lastSaved: serverTimestamp() }, { merge: true });
-      setIsEditMode(false); // Wyłącz tryb edycji po pomyślnym zapisie
-      console.log("Zmiany zostały pomyślnie zapisane.");
+      setIsEditMode(false);
     } catch (error) { 
       console.error("Błąd podczas zapisu do Firestore:", error); 
     } finally { 
@@ -244,7 +239,7 @@ export const ProjectProvider = ({ children }) => {
   }, [projectData, calculations, settings, totals]);
   
   useEffect(() => {
-    if (!currentUser || isEditMode) { // Listener jest wyłączony w trybie edycji
+    if (!currentUser || isEditMode) {
       return;
     }
     const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId || 'main');
@@ -269,9 +264,9 @@ export const ProjectProvider = ({ children }) => {
 
   const contextValue = { 
     projectData, calculations, settings, totals, isSaving, activeProjectId,
-    isEditMode, // Udostępniamy stan
-    setIsEditMode, // Udostępniamy funkcję
-    saveDataToFirestore, // Udostępniamy funkcję zapisu
+    isEditMode, 
+    setIsEditMode, 
+    saveDataToFirestore, 
     setProjectData: setProjectDataWithDefaults, 
     updateSectionData, 
     updateSettings, 

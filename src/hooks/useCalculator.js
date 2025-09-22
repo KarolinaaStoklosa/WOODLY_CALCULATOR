@@ -14,41 +14,52 @@ export const useCalculator = () => {
   const formatPrice = (price) => (typeof price === 'number' ? price.toFixed(2) : '0.00');
   const formatSurface = (surface) => (typeof surface === 'number' ? surface.toFixed(4) : '0.0000');
 
-  const calculateKorpus = (korpus) => {
+    const calculateKorpus = (korpus) => {
     const szer = parseNum(korpus.szerokość);
     const wys = parseNum(korpus.wysokość);
     const głęb = parseNum(korpus.głębokość);
     const półki = parseNum(korpus.ilośćPółek);
     const podziałFrontu = parseNum(korpus.podziałFrontu) || 1;
-    // ✅ NOWOŚĆ: Pobieramy ilość sztuk
     const ilośćSztuk = parseNum(korpus.ilośćSztuk) || 1;
 
     if (szer <= 0 || wys <= 0 || głęb <= 0 || !korpus.plytyKorpus) {
       return { /* Zwracamy wyzerowany obiekt */ };
     }
 
-    // Obliczenia dla JEDNEJ sztuki
-    const powierzchniaKorpus_jedna = ((2 * głęb * wys) + (2 * szer * głęb)) / 1000000;
+    // ✅ ZMIANA 1: Nowa, elastyczna logika dla tyłu szafki
+    let powierzchniaKorpus_jedna = ((2 * głęb * wys) + (2 * szer * głęb)) / 1000000;
     const powierzchniaPółek_jedna = (półki * szer * głęb) / 1000000;
     const powierzchniaFront_jedna = (szer * wys) / 1000000;
     const powierzchniaTył_jedna = (szer * wys) / 1000000;
+    
+    const cenaPlytaKorpus = getItemPrice('plytyMeblowe', korpus.plytyKorpus);
+    let cenaTył_jedna;
+
+    if (korpus.tył === 'Jak płyta korpusu') {
+      // Jeśli tył jest z płyty korpusu, dodajemy jego powierzchnię do powierzchni korpusu
+      powierzchniaKorpus_jedna += powierzchniaTył_jedna;
+      // Koszt tyłu jest teraz częścią kosztu korpusu, więc zerujemy osobną cenę tyłu
+      cenaTył_jedna = 0;
+    } else {
+      // W przeciwnym razie (domyślnie HDF), liczymy koszt tyłu osobno
+      const cenaTylHdf = getItemPrice('tylHdf', 'HDF');
+      cenaTył_jedna = powierzchniaTył_jedna * cenaTylHdf;
+    }
+    
     const okleinaKorpusMetry_jedna = ((2 * wys) + (2 * szer) + (półki * szer)) / 1000;
     const okleinaFrontMetry_jedna = korpus.okleinaFront && korpus.okleinaFront !== '-- BRAK OKLEINY --' ? ((2 * podziałFrontu * szer) + (2 * wys)) / 1000 : 0;
-
-    const cenaPlytaKorpus = getItemPrice('plytyMeblowe', korpus.plytyKorpus);
     const cenaPlytaFront = korpus.plytyFront === '<< JAK PŁYTA KORPUS' ? cenaPlytaKorpus : getItemPrice('fronty', korpus.plytyFront);
     const cenaOkleinaKorpusZaMetr = getItemPrice('okleina', korpus.okleina);
     const cenaOkleinaFrontZaMetr = getItemPrice('okleina', korpus.okleinaFront);
-    const cenaTylHdf = getItemPrice('tylHdf', 'HDF');
 
     const cenaKorpus_jedna = powierzchniaKorpus_jedna * cenaPlytaKorpus;
     const cenaPółki_jedna = powierzchniaPółek_jedna * cenaPlytaKorpus;
     const cenaFront_jedna = korpus.plytyFront === '-- BRAK FRONTU --' ? 0 : powierzchniaFront_jedna * cenaPlytaFront;
-    const cenaTył_jedna = powierzchniaTył_jedna * cenaTylHdf;
     const cenaOkleinaKorpus_jedna = okleinaKorpusMetry_jedna * cenaOkleinaKorpusZaMetr;
     const cenaOkleinaFront_jedna = okleinaFrontMetry_jedna * cenaOkleinaFrontZaMetr;
     
-    // ✅ ZMIANA: Mnożymy wszystkie finalne wartości przez `ilośćSztuk`
+    const cenaCałość_jedna = cenaKorpus_jedna + cenaPółki_jedna + cenaFront_jedna + cenaTył_jedna + cenaOkleinaKorpus_jedna + cenaOkleinaFront_jedna;
+
     return {
       ilośćSztuk,
       podziałFrontu,
@@ -64,7 +75,7 @@ export const useCalculator = () => {
       cenaTył: cenaTył_jedna * ilośćSztuk,
       cenaOkleinaKorpus: cenaOkleinaKorpus_jedna * ilośćSztuk,
       cenaOkleinaFront: cenaOkleinaFront_jedna * ilośćSztuk,
-      cenaCałość: (cenaKorpus_jedna + cenaPółki_jedna + cenaFront_jedna + cenaTył_jedna + cenaOkleinaKorpus_jedna + cenaOkleinaFront_jedna) * ilośćSztuk
+      cenaCałość: cenaCałość_jedna * ilośćSztuk
     };
   };
 
