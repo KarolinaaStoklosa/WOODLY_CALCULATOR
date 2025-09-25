@@ -29,7 +29,7 @@ const KorpusyTable = () => {
       plytyFront: lastKorpus.plytyFront || plytyFrontOptions[0]?.nazwa || '',
       tył: 'HDF',
       okleina: lastKorpus.okleina || okleinaOptions[0]?.nazwa || '',
-      okleinaFront: lastKorpus.okleinaFront || '-- BRAK OKLEINY --',
+      okleinaFront: lastKorpus.okleinaFront || okleinaOptions[0]?.nazwa || '',
       ilośćSztuk: 1,
       podziałFrontu: 1,
       szerokość: '',
