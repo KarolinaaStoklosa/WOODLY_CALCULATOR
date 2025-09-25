@@ -21,16 +21,19 @@ const MaterialsManager = () => {
   const [activeCategory, setActiveCategory] = useState('plytyMeblowe');
   const [editingItem, setEditingItem] = useState(null);
 
-  const handleAddItem = () => {
+
+ const handleAddItem = () => {
     const newItem = {
-      id: null,
+      id: null, // Tymczasowe ID do śledzenia w UI
       nazwa: 'Nowy Materiał',
       cena: 0,
       opis: '',
       kategoria: activeCategory,
-      // ✅ ZMIANA: Domyślnie ustawiamy typ 'produkt' dla nowej pozycji w blatach
-      typ: activeCategory === 'blaty' ? 'produkt' : undefined,
     };
+    // Pole `typ` jest dodawane tylko, gdy jest to absolutnie konieczne
+    if (activeCategory === 'blaty') {
+      newItem.typ = 'produkt';
+    }
     setEditingItem(newItem);
   };
 
@@ -38,33 +41,27 @@ const MaterialsManager = () => {
     setEditingItem({ ...item, id: index });
   };
 
+  // ✅ POPRAWKA 2: Funkcja zapisu poprawnie aktualizuje i dodaje dane, nie tracąc pól
   const handleSaveItem = (itemToSave) => {
     const newMaterials = { ...materials };
     const categoryItems = [...(newMaterials[activeCategory] || [])];
-
-    // Tworzymy czysty obiekt, aby zapisać tylko potrzebne dane
-    const cleanItem = {
-      nazwa: itemToSave.nazwa,
-      cena: itemToSave.cena,
-      opis: itemToSave.opis,
-      kategoria: itemToSave.kategoria,
-    };
     
-    // Zapisujemy 'typ' tylko dla kategorii 'blaty'
-    if (activeCategory === 'blaty') {
-      cleanItem.typ = itemToSave.typ;
-    }
+    // Usuwamy tymczasowe ID z obiektu, który będziemy zapisywać
+    const { id, ...dataToSave } = itemToSave;
 
-    if (itemToSave.id !== null && categoryItems[itemToSave.id]) {
-      categoryItems[itemToSave.id] = cleanItem;
+    if (id !== null && categoryItems[id]) {
+      // EDYCJA: Łączymy oryginalny obiekt z nowymi danymi, zachowując wszystkie pola
+      categoryItems[id] = { ...categoryItems[id], ...dataToSave };
     } else {
-      categoryItems.push(cleanItem);
+      // DODAWANIE: Dodajemy nowy, kompletny obiekt
+      categoryItems.push(dataToSave);
     }
     
     newMaterials[activeCategory] = categoryItems;
     updateMaterials(newMaterials);
     setEditingItem(null);
   };
+
 
   const handleRemoveItem = (indexToRemove) => {
       if (window.confirm("Czy na pewno chcesz usunąć ten materiał?")) {
