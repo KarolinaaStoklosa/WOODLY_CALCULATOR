@@ -173,7 +173,7 @@ const WidocznyBokCard = ({ bok, index, onUpdate, onRemove, showAdvanced, frontyO
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Ilość [szt]</label>
-                    <input type="number" value={bok.ilość} onChange={(e) => onUpdate(bok.id, 'ilość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="1" min="1" />
+                    <input type="number" value={bok.ilość} onChange={(e) => onUpdate(bok.id, 'ilość', e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="1" min="0" />
                 </div>
             </div>
             {showAdvanced && (

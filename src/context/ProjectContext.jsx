@@ -158,6 +158,46 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [currentUser, settings]);
 
+  const saveSetupAndContinue = useCallback(async (formData) => {
+    if (!currentUser) return;
+
+    const isWorkingCopy = activeProjectId === 'main';
+    const hasIdentifierChanged = 
+      !isWorkingCopy && 
+      (projectData?.projectName !== formData.projectName || projectData?.offerNumber !== formData.offerNumber);
+
+    setIsSaving(true);
+    setProjectData(formData); // Natychmiastowa aktualizacja UI
+
+    try {
+      // Jeśli to nowy projekt LUB zmieniono jego nazwę/numer, tworzymy nowy wpis w archiwum
+      if (isWorkingCopy || hasIdentifierChanged) {
+        const projectsCollectionRef = collection(db, 'users', currentUser.uid, 'projects');
+        const docPayload = {
+          projectData: formData,
+          calculations: isWorkingCopy ? defaultCalculations : calculations, // Kopiuj kalkulacje jeśli klonujemy
+          settings: settings,
+          createdAt: serverTimestamp(),
+          lastSaved: serverTimestamp(),
+        };
+        const newDocRef = await addDoc(projectsCollectionRef, docPayload);
+        setActiveProjectId(newDocRef.id); // Ustawiamy nowy projekt jako aktywny
+        console.log(`Stworzono nowy projekt w archiwum: ${newDocRef.id}`);
+      } else {
+        // W przeciwnym razie, tylko aktualizujemy istniejący projekt
+        const docRef = doc(db, 'users', currentUser.uid, 'projects', activeProjectId);
+        await setDoc(docRef, { projectData: formData, lastSaved: serverTimestamp() }, { merge: true });
+        console.log(`Zaktualizowano dane projektu: ${activeProjectId}`);
+      }
+    } catch (error) {
+      console.error("Błąd podczas zapisu danych projektu:", error);
+      alert("Wystąpił błąd podczas zapisu.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentUser, activeProjectId, projectData, calculations, settings]);
+
+
 
   const createNewProject = useCallback(async (newProjectData) => {
     if (!currentUser) return null;
@@ -273,7 +313,8 @@ export const ProjectProvider = ({ children }) => {
     loadProject, createNewProject, deleteProject,
     saveProjectToArchive,
     exportToJson,
-    resetProject
+    resetProject,
+    saveSetupAndContinue
   };
 
   return <ProjectContext.Provider value={contextValue}>{children}</ProjectContext.Provider>;

@@ -74,7 +74,7 @@ useEffect(() => {
   }, [korpusy.map(k => `${k.plytyKorpus}-${k.plytyFront}-${k.okleina}-${k.okleinaFront}-${k.szerokość}-${k.wysokość}-${k.głębokość}-${k.ilośćPółek}-${k.podziałFrontu}-${k.ilośćSztuk}-${k.tył}`).join('|')]);
   
   // ✅ ZMIANA: Obliczamy całkowitą liczbę szafek (uwzględniając ilość sztuk)
-  const totalSzafki = korpusy.reduce((sum, k) => sum + (parseInt(k.ilośćSztuk) || 1), 0);
+  const totalSzafki = korpusy.reduce((sum, k) => sum + (parseInt(k.ilośćSztuk)), 0);
 
   const totalPowierzchniaKorpusyPolki = korpusy.reduce((sum, k) => sum + (k.powierzchniaKorpus || 0) + (k.powierzchniaPółek || 0), 0);
   const totalPowierzchniaFronty = korpusy.reduce((sum, k) => sum + (k.powierzchniaFront || 0), 0);
@@ -339,7 +339,7 @@ const KorpusCard = ({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Ilość sztuk</label>
-              <input type="number" value={korpus.ilośćSztuk || 1} onChange={(e) => onUpdate(korpus.id, 'ilośćSztuk', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-semibold" placeholder="1" min="1" />
+              <input type="number" value={korpus.ilośćSztuk } onChange={(e) => onUpdate(korpus.id, 'ilośćSztuk', e.target.value)} disabled={!isEditMode} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-semibold" placeholder="1" min="0" />
             </div>
           </div>
 

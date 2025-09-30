@@ -20,7 +20,7 @@ export const useCalculator = () => {
     const głęb = parseNum(korpus.głębokość);
     const półki = parseNum(korpus.ilośćPółek);
     const podziałFrontu = parseNum(korpus.podziałFrontu) || 1;
-    const ilośćSztuk = parseNum(korpus.ilośćSztuk) || 1;
+    const ilośćSztuk = parseNum(korpus.ilośćSztuk);
 
     if (szer <= 0 || wys <= 0 || głęb <= 0 || !korpus.plytyKorpus) {
       return { /* Zwracamy wyzerowany obiekt */ };
@@ -81,7 +81,7 @@ export const useCalculator = () => {
 
   // 📦 KALKULACJA SZUFLAD
   const calculateSzuflada = (szuflada) => {
-    const ilość = parseNum(szuflada.ilość) || 0;
+    const ilość = parseNum(szuflada.ilość);
 
     if (ilość <= 0 || !szuflada.rodzaj) {
       return {
@@ -108,7 +108,7 @@ export const useCalculator = () => {
    const calculateWidocznyBok = (bok) => {
     const szer = parseNum(bok.szerokość);
     const wys = parseNum(bok.wysokość);
-    const ilość = parseNum(bok.ilość) || 1;
+    const ilość = parseNum(bok.ilość);
 
     if (szer <= 0 || wys <= 0 || !bok.rodzaj) {
       return {
@@ -146,7 +146,7 @@ export const useCalculator = () => {
 
   // 🚪 KALKULACJA DRZWI PRZESUWNYCH
   const calculateDrzwiPrzesuwne = (drzwi) => {
-    const ilość = parseNum(drzwi.ilość) || 0;
+    const ilość = parseNum(drzwi.ilość);
 
     if (ilość <= 0 || !drzwi.rodzaj) {
       return {
@@ -167,7 +167,7 @@ export const useCalculator = () => {
 
   // 🔧 KALKULACJA UCHWYTÓW
   const calculateUchwyt = (uchwyt) => {
-    const ilość = parseNum(uchwyt.ilość) || 1;
+    const ilość = parseNum(uchwyt.ilość);
 
     if (!uchwyt.rodzaj || ilość <= 0) {
       return {
@@ -188,7 +188,7 @@ export const useCalculator = () => {
 
   // 🔗 KALKULACJA ZAWIASÓW
   const calculateZawias = (zawias) => {
-    const ilość = parseNum(zawias.ilość) || 1;
+    const ilość = parseNum(zawias.ilość) ;
 
     if (!zawias.rodzaj || ilość <= 0) {
       return {
@@ -209,7 +209,7 @@ export const useCalculator = () => {
 
   // ⬆️ KALKULACJA PODNOŚNIKÓW
   const calculatePodnosnik = (podnosnik) => {
-    const ilość = parseNum(podnosnik.ilość) || 1;
+    const ilość = parseNum(podnosnik.ilość);
 
     if (!podnosnik.rodzaj || ilość <= 0) {
       return {
@@ -230,7 +230,7 @@ export const useCalculator = () => {
 
   // 🏔️ KALKULACJA BLATU
   const calculateBlat = (blat) => {
-    const ilość = parseNum(blat.ilość) || 1;
+    const ilość = parseNum(blat.ilość);
 
     if (!blat.rodzaj || ilość <= 0) {
       return {
@@ -256,7 +256,7 @@ export const useCalculator = () => {
 
   // 🔧 KALKULACJA AKCESORIÓW
   const calculateAkcesorium = (akcesorium) => {
-    const ilość = parseNum(akcesorium.ilość) || 1;
+    const ilość = parseNum(akcesorium.ilość);
 
     if (!akcesorium.rodzaj || ilość <= 0) {
       return {

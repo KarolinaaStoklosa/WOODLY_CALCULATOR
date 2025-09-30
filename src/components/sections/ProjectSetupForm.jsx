@@ -14,7 +14,7 @@ const generateOfferNumber = () => {
 
 const ProjectSetupForm = ({ onComplete }) => {
   // ✅ 1. Pobieramy stan `isEditMode` z kontekstu
-  const { projectData, setProjectData, isEditMode } = useProject();
+  const { projectData, setProjectData, isEditMode, saveSetupAndContinue } = useProject();
   
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm({
     defaultValues: projectData || {}
@@ -28,8 +28,8 @@ const ProjectSetupForm = ({ onComplete }) => {
     }
   }, [projectData, reset, setValue]);
 
-  const onSubmit = (data) => {
-    setProjectData(data);
+  const onSubmit = async (data) => {
+    await saveSetupAndContinue(data);
     if (onComplete) {
       onComplete(data);
     }
@@ -45,7 +45,7 @@ const ProjectSetupForm = ({ onComplete }) => {
 
         {/* ✅ 2. Obejmujemy formularz `fieldset`, aby zablokować wszystkie pola wewnątrz */}
         <form onSubmit={handleSubmit(onSubmit)}>
-          <fieldset disabled={!isEditMode} className="space-y-8">
+          <fieldset className="space-y-8">
             <div className="p-6 border rounded-lg">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><File className="w-5 h-5 mr-2 text-blue-600" />Dane Główne</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -78,7 +78,7 @@ const ProjectSetupForm = ({ onComplete }) => {
             </div>
 
             <div className="pt-6 text-right">
-              <button type="submit" disabled={!isEditMode} className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+              <button type="submit" className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors">
                 Zapisz i Kontynuuj
               </button>
             </div>

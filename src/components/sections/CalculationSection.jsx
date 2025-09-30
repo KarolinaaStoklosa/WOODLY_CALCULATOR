@@ -203,21 +203,54 @@ const CalculationSection = () => {
 };
 
 // --- Komponenty Pomocnicze ---
-const EditableListItem = ({ item, type, onChange, onRemove, hasQuantity }) => (
+// --- Komponenty Pomocnicze ---
+const EditableListItem = ({ item, type, onChange, onRemove, hasQuantity }) => {
+   const total = (item.pricePerUnit || 0) * (item.quantity || 0);
+  return (
     <div className="grid grid-cols-12 gap-2 items-end p-2 bg-white border rounded-lg">
-        <div className="col-span-1 flex justify-center items-center"><input type="checkbox" checked={item.active} onChange={e => onChange(type, item.id, 'active', e.target.checked)} className="w-5 h-5" /></div>
-        <div className={hasQuantity ? "col-span-5" : "col-span-8"}><label className='text-xs text-gray-500'>Nazwa</label><input type="text" value={item.name} onChange={e => onChange(type, item.id, 'name', e.target.value)} className="w-full p-2 border rounded-lg text-sm" /></div>
-        {hasQuantity ? (
-            <>
-                <div className="col-span-2"><label className='text-xs text-gray-500'>Cena/jedn.</label><input type="number" value={item.pricePerUnit} onChange={e => onChange(type, item.id, 'pricePerUnit', parseFloat(e.target.value) || 0)} className="w-full p-2 border rounded-lg text-sm" /></div>
-                <div className="col-span-2"><label className='text-xs text-gray-500'>Ilość ({item.unit || 'szt'})</label><input type="number" value={item.quantity} onChange={e => onChange(type, item.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-full p-2 border rounded-lg text-sm" /></div>
-            </>
-        ) : (
-            <div className="col-span-2"><label className='text-xs text-gray-500'>Cena</label><input type="number" value={item.unitPrice} onChange={e => onChange(type, item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="w-full p-2 border rounded-lg text-sm" /></div>
-        )}
-        <div className="col-span-1 flex justify-center items-center"><button onClick={() => onRemove(type, item.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button></div>
+      <div className="col-span-1 flex justify-center items-center">
+        <input type="checkbox" checked={item.active} onChange={e => onChange(type, item.id, 'active', e.target.checked)} className="w-5 h-5" />
+      </div>
+      
+      {/* ✅ KROK 2: Zmieniamy szerokość kolumny z nazwą, aby zrobić miejsce */}
+      <div className={hasQuantity ? "col-span-4" : "col-span-8"}>
+        <label className='text-xs text-gray-500'>Nazwa</label>
+        <input type="text" value={item.name} onChange={e => onChange(type, item.id, 'name', e.target.value)} className="w-full p-2 border rounded-lg text-sm" />
+      </div>
+
+      {hasQuantity ? (
+        <>
+          <div className="col-span-2">
+            <label className='text-xs text-gray-500'>Cena/jedn.</label>
+            <input type="number" value={item.pricePerUnit} onChange={e => onChange(type, item.id, 'pricePerUnit', parseFloat(e.target.value) || 0)} className="w-full p-2 border rounded-lg text-sm" />
+          </div>
+          <div className="col-span-2">
+            <label className='text-xs text-gray-500'>Ilość ({item.unit || 'szt'})</label>
+            <input type="number" value={item.quantity} onChange={e => onChange(type, item.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-full p-2 border rounded-lg text-sm" />
+          </div>
+          
+          {/* ✅ KROK 3: Dodajemy nową kolumnę z obliczoną sumą */}
+          <div className="col-span-2 text-right pr-2">
+            <label className='text-xs text-gray-500'>Suma</label>
+            <p className="font-bold text-gray-800 text-sm h-10 flex items-center justify-end">
+              {total.toFixed(2)} zł
+            </p>
+          </div>
+        </>
+      ) : (
+        <div className="col-span-3"> {/* Zmieniona szerokość dla opcji bez ilości */}
+            <label className='text-xs text-gray-500'>Cena</label>
+            <input type="number" value={item.unitPrice} onChange={e => onChange(type, item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="w-full p-2 border rounded-lg text-sm" />
+        </div>
+      )}
+      <div className="col-span-1 flex justify-center items-center">
+        <button onClick={() => onRemove(type, item.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+            <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
-);
+    );
+  };
 
 const StatCard = ({ title, value, color, isLarge }) => { 
     const colorClasses = { 

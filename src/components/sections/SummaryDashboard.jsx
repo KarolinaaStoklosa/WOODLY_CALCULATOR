@@ -147,18 +147,9 @@ const SummaryDashboard = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">📄 Oferty</h3>
-            <OfferButtons offerData={offerData} />
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">💾 Zapis i Eksport</h3>
-            <div className="space-y-3">
-              <ActionButton icon={Save} text="Zapisz Projekt" subtext="Zapisz w archiwum" onClick={saveProjectToArchive} color="green" />
-              <ActionButton icon={Download} text="Eksport JSON" subtext="Pobierz dane projektowe" onClick={exportToJson} color="purple" />
-            </div>
-          </div>
+         <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Wygeneruj Ofertę</h3>
+          <OfferButtons offerData={offerData} />
         </div>
       </div>
     </div>
@@ -183,11 +174,6 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
       </p>
     </div>
   );
-};
-
-const ActionButton = ({ icon: Icon, text, subtext, onClick, color }) => {
-  const colorClasses = { green: 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700', purple: 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700' };
-  return( <button onClick={onClick} className={`w-full flex items-center p-4 bg-gradient-to-br text-white rounded-xl transition-all transform hover:scale-105 shadow-lg ${colorClasses[color]}`}><Icon className="w-7 h-7 mr-4" /><div className="text-left"><span className="font-bold text-base">{text}</span><span className="text-sm opacity-90 block">{subtext}</span></div></button> );
 };
 
 export default SummaryDashboard;

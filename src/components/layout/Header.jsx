@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProject } from '../../context/ProjectContext';
-import { Calculator, Menu, Sun, Moon, Settings, User, Search, Package, LogOut, Edit, Save, X, Loader2 } from 'lucide-react';
+import { Calculator, Menu, Sun, Moon, Settings, User, Search, Package, LogOut, Edit, Save, X, Loader2, ChevronRight, FileText } from 'lucide-react';
 
 const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const { isEditMode, setIsEditMode, saveDataToFirestore, isSaving } = useProject();
+  const { isEditMode, setIsEditMode, saveDataToFirestore, isSaving, projectData  } = useProject();
   
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -58,11 +58,20 @@ const Header = ({ darkMode, toggleDarkMode, toggleSidebar }) => {
                 <Calculator className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-50">Qalqly</h1>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-50">Calqly</h1>
               <p className="hidden text-xs text-gray-500 sm:block dark:text-gray-400">Kalkulator wycen</p>
             </div>
           </div>
         </div>
+        <div className="flex items-center justify-between gap-4">
+           {projectData && (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
+              <ChevronRight className="w-4 h-4 text-gray-300" />
+              <FileText className="w-4 h-4 text-gray-400" />
+              <span className="font-medium text-gray-700">{projectData.projectName || 'Nowy Projekt'}</span>
+            </div>
+          )}
+          </div>
 
         {/* === PRAWA STRONA (PRZEBUDOWANA) === */}
         <div className="flex items-center gap-4">

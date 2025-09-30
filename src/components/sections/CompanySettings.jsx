@@ -78,9 +78,7 @@ const CompanySettings = () => {
                     <button onClick={handleCancel} className="flex items-center gap-2 bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors">
                       <X size={16} /> Anuluj
                     </button>
-                    <button onClick={handleSubmit(onSubmit)} className="flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
-                      <Save size={16} /> Zapisz Ustawienia
-                    </button>
+             
                   </>
                 )}
             </div>
@@ -132,6 +130,16 @@ const CompanySettings = () => {
               />
             </div>
           </Section>
+          <div className="flex justify-end">
+                {isEditMode ? (
+                 <button onClick={handleSubmit(onSubmit)} className="flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                      <Save size={16} /> Zapisz Ustawienia
+                    </button>
+                ) : (
+                  <></>
+                )}
+            </div>
+                 
         </form>
       </div>
     </div>
